@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"globalconst.h": "c",
+			"spi_flash.h": "c",
+			"com1_232.h": "c",
+			"typedef.h": "c",
+			"stdio.h": "c",
+			"bsp_motor3.h": "c",
+			"bsp_motor1.h": "c",
+			"globalv.h": "c",
+			"bsp_motor4.h": "c",
+			"macro.h": "c",
+			"main.h": "c",
+			"wk2xxx.h": "c",
+			"globalv_extern.h": "c",
+			"com6_232.h": "c",
+			"wk_port1.h": "c"
+		}
+	}
+}
