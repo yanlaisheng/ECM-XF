@@ -969,7 +969,7 @@ int ECM_ShowPDOConfig(int Slave, int SmaIdx)
 		PRINTF("\tPDO%d - MapIdx(0x%X)\r\n", i, PdoConfigBuf.MapIdx[i]);
 		for (j = 0; j < PdoConfigBuf.ObjsCnt[i]; j++)
 		{
-			PRINTF("\t\t0x%X\r\n", PdoConfigBuf.Table[i][j]);
+			PRINTF("\t\t(0x%X)\r\n", PdoConfigBuf.Table[i][j]);
 		}
 	}
 	return 1;
@@ -1159,7 +1159,7 @@ int SpiDataExchange(uint8_t *RetIdx, uint8_t *RetCmd)
 	pCmd->StopWord = ECM_STOP_WORD;
 	UserSpiDataExchange(u8TxBuf, u8RxBuf, sizeof(SPI_CMD_PACKAGE_T));
 	// UserDelay(200); //200usec
-//	HAL_Delay(1);
+	//	HAL_Delay(1);
 	if (pRet->Crc == ECM_CRC_MAGIC_NUM)
 	{
 		g_u8EcmStatus = pRet->Head.u8Status;

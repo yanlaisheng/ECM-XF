@@ -164,6 +164,7 @@ int userGetchar(void)
   */
 int main(void)
 {
+	u32 cyc_counter=0;
 	/* USER CODE BEGIN 1 */
 
 	/* USER CODE END 1 */
@@ -204,16 +205,15 @@ int main(void)
 	MX_TIM7_Init();
 	MX_TIM6_Init();
 	/* USER CODE BEGIN 2 */
-	//初始化WK2124扩展串口
-	Init_WK_Uart();
+	InitClock(); // 初始化外部时钟DS1302
 
-	//测试EEPROM
-	Test_EEPROM();
+	Init_WK_Uart(); //初始化WK2124扩展串口
+
+	Test_EEPROM(); //测试EEPROM
 
 	//EtherCAT初始化
 	// Init_EtherCAT();
 	//	main_ini();
-	//	GPIO_test();
 
 	//初始化电机的PWM
 	Initial_PWM_Motors();
@@ -223,31 +223,52 @@ int main(void)
 	Variable_Init(); // Initialize VARIABLE
 	ParLimit();		 // 参数限制
 
+	Send_Driver_CMD(Pw_EquipmentNo3,06,0x8910,0);						//写驱动器3的P8910参数=0，RDY状态
+	Send_Driver_CMD(Pw_EquipmentNo3,06,0x0029,1);						//写驱动器3的P0029参数=1，使用外部制动电阻
+	Send_StopCMD();	
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		ParLimit();
+		Boot_ParLst ();								// 初始化设定参数	
+		ParLst_Init_Group();						// 按组进行参数初始化	
+		ParLst_Init_Group2Zero();					//清零位置命令
+		ParLst_Init_Pos2Zero();						//清零位置
+		Pos_Manual_Adj();							//手动调整编码器位置
+		ParLimit();									// 参数限制		
+		ReadWriteRealTime ();						// 读写实时时钟 ISL1208	
+
+		EquipStatus ();								// 设备状态
+		KglStatus ();								// 开关量状态	
+		DigitalIn();								// DI
+		Manual_Control ();							// 手动控制启停
+		
+		SavePar_Prompt();							// 定时保存设定参数到FLASH"+"状态提示
+		ForceSavePar();								// 定时强制保存参数
+		
+		Time_Output();								// 软件时钟输出	
+
 		UART_TX();
-		//测试WK扩展串口
-		// TEST_WK_Uart();
-		// test_GPIO();
-		WK_Com1_RcvProcess();
-		WK_Com1_SlaveSend();
 
-		WK_Com2_RcvProcess();
-		WK_Com2_SlaveSend();
-
-		WK_Com3_RcvProcess();
-		WK_Com3_SlaveSend();
-
-		TEST_Send_Pwm();
-
-		// HAL_GPIO_TogglePin(DO8_GPIO_Port, DO8_Pin);
-
-		// HAL_Delay(200);
+		Verify_Pos_CMD();							//校验发送的位置指令是否正确写入
+		Driver_Control();							//电机运行控制
+		Reset_Drivers();							//有复位命令，则复位到原点
+		
+		BRAKE_Control();							//刹车控制
+		is_Reseted();								//判断是否在原点
+		Cal_Pos_Speed();							//计算脉冲值和速度
+		
+		Record_Current_Pos();						//记录当前位置
+		Control_Hand();								//机械手控制
+		Limit_Max_Pos();							//限制最大最小位置范围
+		// IWDG_Feed();								// 喂狗	2013.7.3
+		
+		cyc_counter++;
+		Pr_cyclecounter_show=cyc_counter&0x0000FFFF;
+		Pr_cyclecounter_HW=(cyc_counter&0xFFFF0000)>>16;
+		// TEST_Send_Pwm();
 
 		// Rd2Wr_IO();
 
@@ -406,8 +427,7 @@ void HAL_SYSTICK_Callback(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	u8 gifr;
-	// int rxlen;
-	// static unsigned char dat1, dat2, dat3, dat4;
+
 	switch (GPIO_Pin)
 	{
 	case GPIO_PIN_8:
@@ -433,14 +453,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			/*数据接收*/
 			WK_Rcv3Counter = wk_RxChars(WK2XXX_PORT3, WK_Rcv3Buffer); //一次接收的数据不会超过256Byte
 			C_WK_NoRcv3Count = 0;
-
-			// while ((Wk2xxxReadReg(3, WK2XXX_FSR) & WK2XXX_RDAT))
-			// {
-			// 	dat3 = Wk2xxxReadReg(3, WK2XXX_FDAT);
-			// 	//				printf("dat3= 0x%x\r\n",dat3);
-			// 	delay_ms(1);
-			// 	Wk2xxxWriteReg(3, WK2XXX_FDAT, dat3);
-			// }
 		}
 
 		gifr = Wk2xxxReadReg(WK2XXX_PORT4, WK2XXX_GIFR); /**/
@@ -449,191 +461,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			/*数据接收*/
 			WK_Rcv4Counter = wk_RxChars(WK2XXX_PORT4, WK_Rcv4Buffer); //一次接收的数据不会超过256Byte
 			C_WK_NoRcv4Count = 0;
-
-			// while ((Wk2xxxReadReg(4, WK2XXX_FSR) & WK2XXX_RDAT)) //判断接收fifo中是否有数据，直到把FIFO读空
-			// {
-			// 	dat4 = Wk2xxxReadReg(4, WK2XXX_FDAT);
-			// 	//				printf("dat4= 0x%x\r\n",dat4);
-			// 	delay_ms(1);
-			// 	Wk2xxxWriteReg(4, WK2XXX_FDAT, dat4);
-			// }
 		}
 		break;
-	case GPIO_PIN_1:
-		break;
+
 	default:
 		break;
-
-		//		gifr=WkReadGReg(WK2XXX_GIFR);
-		//			delay_ms(1000);
-		//		printf("over\n");
-		//		printf("\n\r\n\r");
-	}
-}
-
-// PWM DMA 完成回调函数
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
-{
-	if (htim == &htim1)
-	{
-		HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);
-	}
-	else if (htim == &htim2)
-	{
-		HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_2);
-	}
-	//……
-}
-
-//测试GPIO
-void test_GPIO(void)
-{
-	if (HAL_GPIO_ReadPin(DI1_GPIO_Port, DI1_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO1_GPIO_Port, DO1_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO1_GPIO_Port, DO1_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI2_GPIO_Port, DI2_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO2_GPIO_Port, DO2_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO2_GPIO_Port, DO2_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI3_GPIO_Port, DI3_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO3_GPIO_Port, DO3_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO3_GPIO_Port, DO3_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI4_GPIO_Port, DI4_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO4_GPIO_Port, DO4_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO4_GPIO_Port, DO4_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI5_GPIO_Port, DI5_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO5_GPIO_Port, DO5_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO5_GPIO_Port, DO5_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI6_GPIO_Port, DI6_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO6_GPIO_Port, DO6_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO6_GPIO_Port, DO6_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI7_GPIO_Port, DI7_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO7_GPIO_Port, DO7_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO7_GPIO_Port, DO7_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI8_GPIO_Port, DI8_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO8_GPIO_Port, DO8_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO8_GPIO_Port, DO8_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI9_GPIO_Port, DI9_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO9_GPIO_Port, DO9_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO9_GPIO_Port, DO9_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI10_GPIO_Port, DI10_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO10_GPIO_Port, DO10_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO10_GPIO_Port, DO10_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI11_GPIO_Port, DI11_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO11_GPIO_Port, DO11_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO11_GPIO_Port, DO11_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI12_GPIO_Port, DI12_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO12_GPIO_Port, DO12_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO12_GPIO_Port, DO12_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI13_GPIO_Port, DI13_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO13_GPIO_Port, DO13_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO13_GPIO_Port, DO13_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI14_GPIO_Port, DI14_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO14_GPIO_Port, DO14_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO14_GPIO_Port, DO14_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI15_GPIO_Port, DI15_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO15_GPIO_Port, DO15_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO15_GPIO_Port, DO15_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI16_GPIO_Port, DI16_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO16_GPIO_Port, DO16_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO16_GPIO_Port, DO16_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI17_GPIO_Port, DI17_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO17_GPIO_Port, DO17_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO17_GPIO_Port, DO17_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI18_GPIO_Port, DI18_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO18_GPIO_Port, DO18_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO18_GPIO_Port, DO18_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI19_GPIO_Port, DI19_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO19_GPIO_Port, DO19_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO19_GPIO_Port, DO19_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI20_GPIO_Port, DI20_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO20_GPIO_Port, DO20_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO20_GPIO_Port, DO20_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI21_GPIO_Port, DI21_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO21_GPIO_Port, DO21_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO21_GPIO_Port, DO21_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI22_GPIO_Port, DI22_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(DO22_GPIO_Port, DO22_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(DO22_GPIO_Port, DO22_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI23_GPIO_Port, DI23_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(LED_H63_GPIO_Port, LED_H63_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(LED_H63_GPIO_Port, LED_H63_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI24_GPIO_Port, DI24_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(LED_H64_GPIO_Port, LED_H64_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(LED_H64_GPIO_Port, LED_H64_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI25_GPIO_Port, DI25_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(LED_H65_GPIO_Port, LED_H65_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(LED_H65_GPIO_Port, LED_H65_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI26_GPIO_Port, DI26_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(LED_H66_GPIO_Port, LED_H66_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(LED_H66_GPIO_Port, LED_H66_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI27_GPIO_Port, DI27_Pin) == GPIO_PIN_SET)
-		HAL_GPIO_WritePin(LED_H67_GPIO_Port, LED_H67_Pin, GPIO_PIN_RESET);
-	else
-		HAL_GPIO_WritePin(LED_H67_GPIO_Port, LED_H67_Pin, GPIO_PIN_SET);
-
-	if (HAL_GPIO_ReadPin(DI28_GPIO_Port, DI28_Pin) == GPIO_PIN_SET)
-	{
-		HAL_GPIO_WritePin(LED_H68_GPIO_Port, LED_H68_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED_H69_GPIO_Port, LED_H69_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(LED_H70_GPIO_Port, LED_H70_Pin, GPIO_PIN_RESET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(LED_H68_GPIO_Port, LED_H68_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(LED_H69_GPIO_Port, LED_H69_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(LED_H70_GPIO_Port, LED_H70_Pin, GPIO_PIN_SET);
 	}
 }
 
@@ -700,22 +532,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		//再次开启接收
 		HAL_UART_Receive_IT(&huart6, (uint8_t *)&Tmp_Rxd6Buffer, 1);
 	}
-}
-
-//发送中断回调函数
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-	//	if(Txd1Counter >= Txd1Max)
-	//    {
-	//		Txd1Counter=0;
-	//		Txd1Max=0;
-	//    }
-	//	else
-	//	{
-	//		/* Write one byte to the transmit data register */
-	//		while(huart1.gState != HAL_UART_STATE_READY);
-	//		HAL_UART_Transmit_IT(&huart1, (uint8_t *)&Txd1Buffer[Txd1Counter++], 1);
-	//	}
 }
 
 //测试EEPROM-W25Q16
@@ -818,33 +634,6 @@ void Init_WK_Uart(void)
 	printf("gena=%x\n", gena);
 }
 
-//测试WK扩展串口
-void TEST_WK_Uart(void)
-{
-	unsigned char dat1, dat2, dat3, dat4;
-
-	if ((Wk2xxxReadReg(WK2XXX_PORT1, WK2XXX_FSR) & WK2XXX_RDAT)) //读取FIFO状态，判断是否为空
-	{
-		dat1 = Wk2xxxReadReg(WK2XXX_PORT1, WK2XXX_FDAT); //读FIFO数据
-		Wk2xxxWriteReg(WK2XXX_PORT1, WK2XXX_FDAT, dat1); //将读取FIFO数据通过TX发送出去
-	}
-	else if ((Wk2xxxReadReg(WK2XXX_PORT2, WK2XXX_FSR) & WK2XXX_RDAT)) //读取FIFO状态，判断是否为空
-	{
-		dat2 = Wk2xxxReadReg(WK2XXX_PORT2, WK2XXX_FDAT); //读FIFO数据
-		Wk2xxxWriteReg(WK2XXX_PORT2, WK2XXX_FDAT, dat2); //将读取FIFO数据通过TX发送出去
-	}
-	else if ((Wk2xxxReadReg(WK2XXX_PORT3, WK2XXX_FSR) & WK2XXX_RDAT)) //读取FIFO状态，判断是否为空
-	{
-		dat3 = Wk2xxxReadReg(WK2XXX_PORT3, WK2XXX_FDAT); //读FIFO数据
-		Wk2xxxWriteReg(WK2XXX_PORT3, WK2XXX_FDAT, dat3); //将读取FIFO数据通过TX发送出去
-	}
-	else if ((Wk2xxxReadReg(WK2XXX_PORT4, WK2XXX_FSR) & WK2XXX_RDAT)) //读取FIFO状态，判断是否为空
-	{
-		dat4 = Wk2xxxReadReg(WK2XXX_PORT4, WK2XXX_FDAT); //读FIFO数据
-		Wk2xxxWriteReg(WK2XXX_PORT4, WK2XXX_FDAT, dat4); //将读取FIFO数据通过TX发送出去
-	}
-}
-
 //初始化EtherCAT
 void Init_EtherCAT(void)
 {
@@ -941,6 +730,18 @@ void UART_TX(void)
 
 	Com6_RcvProcess(); // 串口6接收处理
 	Com6_SlaveSend();  // 串口6从机发送
+
+	WK_Com1_RcvProcess(); //WK2124扩展串口1接收处理
+	WK_Com1_SlaveSend();  //WK2124扩展串口1发送处理
+
+	WK_Com2_RcvProcess();
+	WK_Com2_SlaveSend();
+
+	WK_Com3_RcvProcess();
+	WK_Com3_SlaveSend();
+
+	WK_Com4_RcvProcess();
+	WK_Com4_SlaveSend();
 }
 
 //测试发PWM波
@@ -951,12 +752,12 @@ void TEST_Send_Pwm(void)
 		Pw_Driver1_Enable = 0;
 		HAL_Delay(100);
 		//发送脉冲
-		Run_Motor_S(1, M1_CLOCKWISE, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Driver1_Speed, Pw_Driver1_AccTime);
-		Run_Motor_S(2, M2_CLOCKWISE, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Driver2_Speed, Pw_Driver2_AccTime);
-		Run_Motor_S(3, M3_CLOCKWISE, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Driver3_Speed, Pw_Driver3_AccTime);
-		Run_Motor_S(4, M4_CLOCKWISE, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Driver4_Speed, Pw_Driver4_AccTime);
-		Run_Motor_S(5, M5_CLOCKWISE, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Driver5_Speed, Pw_Driver5_AccTime);
-		Run_Motor_S(6, M6_CLOCKWISE, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Driver6_Speed, Pw_Driver6_AccTime);
+		Run_Motor_S(1, M1_CLOCKWISE, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Driver1_Speed, Pw_Motor1_STEP_PARA);
+		Run_Motor_S(2, M2_CLOCKWISE, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Driver2_Speed, Pw_Motor2_STEP_PARA);
+		Run_Motor_S(3, M3_CLOCKWISE, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Driver3_Speed, Pw_Motor3_STEP_PARA);
+		Run_Motor_S(4, M4_CLOCKWISE, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Driver4_Speed, Pw_Motor4_STEP_PARA);
+		Run_Motor_S(5, M5_CLOCKWISE, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Driver5_Speed, Pw_Motor5_STEP_PARA);
+		Run_Motor_S(6, M6_CLOCKWISE, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Driver6_Speed, Pw_Motor6_STEP_PARA);
 	}
 }
 

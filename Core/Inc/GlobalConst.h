@@ -129,37 +129,16 @@
 #define Qb_Q1_IN PAin(11) //=1 打开,=0闭合		//数字量输出1  连接到DSP B4
 #define Qb_Q2_IN PAin(12) //=1 打开,=0闭合		//数字量输出2  连接到DSP B5
 
-#define STOP_BRAKE_SYSTEM GPIO_ResetBits(GPIOA, GPIO_Pin_11) //停止刹车，允许运行
-#define START_BRAKE_SYSTEM GPIO_SetBits(GPIOA, GPIO_Pin_11)  //开始刹车，不允许运行
+#define STOP_BRAKE_SYSTEM HAL_GPIO_WritePin(GPIOA, DO1_Pin, GPIO_PIN_RESET) //停止刹车，允许运行
 
-#define Brake_Status_DO1 PAin(11) //刹车状态
+#define START_BRAKE_SYSTEM HAL_GPIO_WritePin(GPIOA, DO1_Pin, GPIO_PIN_SET) //开始刹车，不允许运行
 
-#define OPEN_HAND GPIO_ResetBits(GPIOA, GPIO_Pin_12) //打开机械手臂
-#define CLOSE_HAND GPIO_SetBits(GPIOA, GPIO_Pin_12)  //闭合机械手臂
+#define Brake_Status_DO1 PAin(8) //刹车状态
 
-//SPI NSS脚
-#define SPI2_NSS_L GPIO_ResetBits(GPIOB, GPIO_Pin_12)
-#define SPI2_NSS_H GPIO_SetBits(GPIOB, GPIO_Pin_12)
+#define OPEN_HAND HAL_GPIO_WritePin(GPIOC, DO2_Pin, GPIO_PIN_RESET) //打开机械手臂
+#define CLOSE_HAND HAL_GPIO_WritePin(GPIOC, DO2_Pin, GPIO_PIN_SET)  //闭合机械手臂
 
-#define SPI3_NSS_L GPIO_ResetBits(GPIOC, GPIO_Pin_6)
-#define SPI3_NSS_H GPIO_SetBits(GPIOC, GPIO_Pin_6)
-
-//指示灯 周成磊 2016.03.10
-#define LED1 PFout(8) //=1,灭; =0亮;
-#define LED2 PBout(6)
-#define LED3 PBout(5)
-#define LED4 PBout(4)
-#define LED5 PBout(3)
-#define LED6 PAout(15) //ZCL 2018.12.8
-
-#define LED1_IN PFin(8) //读
-#define LED2_IN PBin(6)
-#define LED3_IN PBin(5)
-#define LED4_IN PBin(4)
-#define LED5_IN PBin(3)
-#define LED6_IN PAin(15) //ZCL 2018.12.8
-
-#define HAND_STATUS PAin(12) //0打开电磁阀；1关闭电磁阀
+#define HAND_STATUS PCin(9) //0打开电磁阀；1关闭电磁阀
 
 #define S_ACCEL 1
 #define T_ACCEL 0
@@ -276,9 +255,6 @@
 #define Pw_BaudRate5 w_ParLst[153] // 波特率5
 #define Pw_Com5Addr w_ParLst[154]  //com5口485通讯地址
 //----
-#define Pw_LLJCaiJiSelect w_ParLst[155] //流量计采集方式
-#define Pw_DDBCaiJiSelect w_ParLst[156]
-#define Pw_DDBAddR w_ParLst[157] //电能表地址
 
 #define Pw_EquipmentNo1 w_ParLst[159] //1#伺服电机Modbus地址
 #define Pw_EquipmentNo2 w_ParLst[160] //2#伺服电机Modbus地址
@@ -287,36 +263,12 @@
 #define Pw_EquipmentNo5 w_ParLst[163] //5#伺服电机Modbus地址
 #define Pw_EquipmentNo6 w_ParLst[164] //6#伺服电机Modbus地址
 
-#define Pw_Com3Add w_ParLst[165]           //com3-T3通讯地址
-#define Pw_InP_CTLVfEn w_ParLst[166]       //进水限制频率使能 2010.8.3 qhd
-#define Pw_VfFreqDownSircle w_ParLst[167]  //每秒递减频率值
-#define Pw_VfFreqDownMin w_ParLst[168]     //最小运行频率
-#define Pw_SetInP w_ParLst[169]            //进水设定压力
-#define Pw_PumpSoftStopEn w_ParLst[170]    //设备软停使能
-#define Pw_VfOnDelay w_ParLst[171]         //变频转工频时启动变频泵延时  秦汉东2010.8.3
-#define Pw_DownFreqHex w_ParLst[172]       //停泵每秒递减频率值
-#define Pw_AllPumpStopDelay w_ParLst[174]  //软停泵延时时间
-#define Pw_GpExitVfOnFreqHex w_ParLst[175] //工频退出变频泵频率赋值
-#define Pw_VfAlarmDelay w_ParLst[176]      //变频器报警停机延时
-#define Pw_PumpRunTimEn w_ParLst[177]      //水泵累计运行时间记录使能
-#define Pw_GpExitFreq w_ParLst[178]        //工频退出频率
-
 #define Pr_RUN_Count w_ParLst[179]     //运行指令计数
 #define Pr_RUN_Count_Set w_ParLst[180] //运行多少圈设定，初始化为0
 
 #define Pw_Total_RUN_Count w_ParLst[181]    //累计运行圈数，出厂值为0
 #define Pw_Total_RUN_Count_HW w_ParLst[182] //累计运行圈数_高字
-#define Pw_Com5BufType w_ParLst[183]        //Com5通讯类型
 #define Pw_ComWriteErr_Stop w_ParLst[184]   //通讯数据写入错误停机功能，=1，停机；=0，不停机
-#define Pw_HighYCSetP1 w_ParLst[185]
-#define Pw_HighYCSetPEK w_ParLst[186]
-#define Pw_HighYCSetPDelay w_ParLst[187]
-#define Pw_PIDSlowEN w_ParLst[188]         //PID缓慢调节频率使能
-#define Pw_PID_UPSlowCount w_ParLst[189]   //PID上升缓慢调节倍数
-#define Pw_PID_PEKUpperlimit w_ParLst[190] //PID调节压差上限
-#define Pw_PID_PEKLowerlimit w_ParLst[191] //PID调节压差下限
-#define Pw_HengVfDelay w_ParLst[192]       // 小流量恒pin时间
-#define Pw_HaveWater_MaxSupplyDelay w_ParLst[193]
 
 #define Pw_Com3BufType w_ParLst[210]
 #define Pw_Drive1_MinPos_SINGLE w_ParLst[211]    //1#电机最小位置（多圈+单圈位置）
@@ -725,22 +677,22 @@
 #define Pw_Driver6_R_Enable w_ParLst_Drive[26] //6#手动运行使能（反转）
 
 #define Pw_Driver1_Speed w_ParLst_Drive[27]   //1#手动运行速度
-#define Pw_Driver1_AccTime w_ParLst_Drive[28] //1#手动加减速时间
+#define Pw_Driver1_AccTime w_ParLst_Drive[28] //1#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver2_Speed w_ParLst_Drive[30]   //2#手动运行速度
-#define Pw_Driver2_AccTime w_ParLst_Drive[31] //2#手动加减速时间
+#define Pw_Driver2_AccTime w_ParLst_Drive[31] //2#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver3_Speed w_ParLst_Drive[33]   //3#手动运行速度
-#define Pw_Driver3_AccTime w_ParLst_Drive[34] //3#手动加减速时间
+#define Pw_Driver3_AccTime w_ParLst_Drive[34] //3#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver4_Speed w_ParLst_Drive[36]   //4#手动运行速度
-#define Pw_Driver4_AccTime w_ParLst_Drive[37] //4#手动加减速时间
+#define Pw_Driver4_AccTime w_ParLst_Drive[37] //4#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver5_Speed w_ParLst_Drive[39]   //5#手动运行速度
-#define Pw_Driver5_AccTime w_ParLst_Drive[40] //5#手动加减速时间
+#define Pw_Driver5_AccTime w_ParLst_Drive[40] //5#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver6_Speed w_ParLst_Drive[42]   //6#手动运行速度
-#define Pw_Driver6_AccTime w_ParLst_Drive[43] //6#手动加减速时间
+#define Pw_Driver6_AccTime w_ParLst_Drive[43] //6#手动加减速：小，加减速慢；大，加减速快
 
 #define Pw_Driver1_Enable w_ParLst_Drive[44] //1#手动运行使能（正转）
 #define Pw_Driver2_Enable w_ParLst_Drive[45] //2#手动运行使能（正转）

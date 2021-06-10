@@ -20,7 +20,9 @@
 			"wk2xxx.h": "c",
 			"globalv_extern.h": "c",
 			"com6_232.h": "c",
-			"wk_port1.h": "c"
+			"wk_port1.h": "c",
+			"stmflash.h": "c",
+			"gpio.h": "c"
 		}
 	}
 }

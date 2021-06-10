@@ -14,7 +14,6 @@
 #include "GlobalConst.h"
 #include "GlobalV_Extern.h" // 全局变量声明
 #include "DoWith.h"
-#include "spi_flash.h"
 //#include "ds1302.h"
 #include "com1_232.h"
 #include "typedef.h"
@@ -614,7 +613,6 @@ void Variable_Init(void) //	变量初始化
 	Pr_F_HaveFault = 0;
 	Pw_Step_Pos_CMD = 0; //单步运行模式=0
 
-	Pr_RUN_Count = 0;
 	Pr_BRAKE_Control = 1; //上电默认刹车
 						  //	START_BRAKE_SYSTEM;				//刹车
 
@@ -751,104 +749,134 @@ void ParArrayRead_Word(uint32_t *p_Top, uc32 *p_Base, uint w_ReadSize)
 //其他的，如STMFLASH_Write，ParArrayRead，都是从右往左写，<——
 void Boot_ParLst(void) // 恢复设定参数为出厂值
 {
-	//	uint8_t  i;
-	//	uint8_t	tmp_Group_Pos;
-	//
-	//	i=0;
-	//
-	//	//如果!=0x5A，则进行初始化
-	//	if(Pw_Initial_F!=0x5A)
-	//	{
-	//		Pw_ModPar=2000;
-	//		Pw_ParInitial=4321;
-	//		S_BootParLst=0;
-	//		Pw_Initial_F=0x5A;
-	//	}
-	//	// Pw_ModPar=2000,可以修改参数// Pw_ParInitial==4321 初始化参数
-	//	if ( Pw_ModPar==2000 && Pw_ParInitial==4321 && S_BootParLst==0 )
-	//	{
-	//		i=1;
-	//	}
-	//
-	//	if ( i==1 )
-	//	{
-	//		//初始化系统参数
-	//		//RAM<——程序数组
-	//		//限制命令组号
-	//		if(Pos_Group_Select>5 || Pos_Group_Select<1)
-	//			Pos_Group_Select=1;
-	//
-	//		tmp_Group_Pos=Pos_Group_Select;
-	//		ParArrayRead(w_ParLst,w_ParBootLst,FLASH_PAR_SIZE);		// 从程序数组中读出初始化参数,255个字
-	//		Pos_Group_Select=tmp_Group_Pos;
+	uint8_t i;
+	uint8_t tmp_Group_Pos;
 
-	//		//初始化驱动参数，并保存在FLASH中
-	//		//FLASH<——程序数组
-	//		STMFLASH_Write(FLASH_SAVE_ADDR0,(uint32_t*)w_ParBootLst_Drive,START_CMD_ADDR);				//把程序数组中的值写入到FLASH中
-	//		//RAM<——程序数组
-	//		ParArrayRead_Word((uint32_t*)&w_ParLst_Drive,(uint32_t*)&w_ParBootLst_Drive,START_CMD_ADDR);				// 读出初始化参数
+	i = 0;
+
+	//如果!=0x5A，则进行初始化
+	if (Pw_Initial_F != 0x5A)
+	{
+		Pw_ModPar = 2000;
+		Pw_ParInitial = 4321;
+		S_BootParLst = 0;
+		Pw_Initial_F = 0x5A;
+	}
+	// Pw_ModPar=2000,可以修改参数// Pw_ParInitial==4321 初始化参数
+	if (Pw_ModPar == 2000 && Pw_ParInitial == 4321 && S_BootParLst == 0)
+	{
+		i = 1;
+	}
+
+	if (i == 1)
+	{
+		//初始化系统参数
+		//RAM<——程序数组
+		//限制命令组号
+		if (Pos_Group_Select > 5 || Pos_Group_Select < 1)
+			Pos_Group_Select = 1;
+
+		tmp_Group_Pos = Pos_Group_Select;
+		ParArrayRead(w_ParLst, w_ParBootLst, FLASH_PAR_SIZE); // 从程序数组中读出初始化参数,255个字
+		Pos_Group_Select = tmp_Group_Pos;
+
+		//初始化驱动参数，并保存在FLASH中
+		//FLASH<——程序数组
+		// STMFLASH_Write(FLASH_SAVE_ADDR0, (uint32_t *)w_ParBootLst_Drive, START_CMD_ADDR); //把程序数组中的值写入到FLASH中
+		//RAM<——程序数组
+		ParArrayRead_Word((uint32_t *)&w_ParLst_Drive, (uint32_t *)&w_ParBootLst_Drive, START_CMD_ADDR); // 读出初始化参数
+
+		arr_p1 = &w_ParLst_Pos_CMD;
+		arrp_p1_Last = arr_p1;
+		//		arr_p1[37]=0;											//发送标志清0，可以发送位置
+
+		// 暂不保存参数，当Pw_ModPar==5000，可以保存参数到FLASH
+		Pw_ModPar = 2000;
+		Pw_ParInitial = 4321;
+		S_BootParLst = 1;
+	}
+
 	//
-	//		arr_p1=&w_ParLst_Pos_CMD;
-	//		arrp_p1_Last=arr_p1;
-	////		arr_p1[37]=0;											//发送标志清0，可以发送位置
-
-	//		// 暂不保存参数，当Pw_ModPar==5000，可以保存参数到FLASH
-	//		Pw_ModPar=2000;
-	//		Pw_ParInitial=4321;
-	//		S_BootParLst=1;
-	//	}
-
-	//	//
-	//	if( T_BootParLst!=SClk10Ms && S_BootParLst!=0 ) // 用于MD304L提示状态，人性化设计 ZCL
-	//	{
-	//		T_BootParLst=SClk10Ms;			// 现在Pw_ParInitial=4321
-	//		C_BootParLst++;
-	//		if ( C_BootParLst>150 && S_BootParLst==1 )
-	//		{
-	//			S_BootParLst=2;
-	//			Pw_ParInitial=6000;
-	//		}
-	//		else if ( C_BootParLst>300 && S_BootParLst==2 )
-	//		{
-	//			T_BootParLst=100;
-	//			C_BootParLst=0;
-	//			S_BootParLst=0;
-	//			Pw_ParInitial=0;
-	//		}
-	//	}
+	if (T_BootParLst != SClk10Ms && S_BootParLst != 0) // 用于MD304L提示状态，人性化设计 ZCL
+	{
+		T_BootParLst = SClk10Ms; // 现在Pw_ParInitial=4321
+		C_BootParLst++;
+		if (C_BootParLst > 150 && S_BootParLst == 1)
+		{
+			S_BootParLst = 2;
+			Pw_ParInitial = 6000;
+		}
+		else if (C_BootParLst > 300 && S_BootParLst == 2)
+		{
+			T_BootParLst = 100;
+			C_BootParLst = 0;
+			S_BootParLst = 0;
+			Pw_ParInitial = 0;
+		}
+	}
 }
 
 //只按组进行初始化位置命令，从保存在FLASH中的某个组中调入到RAM中
 //对位置信息不初始化
 void ParLst_Init_Group(void)
 {
-	//	if(Pw_ModPar==2000 && Pw_ParInitial==4000)
-	//	{
-	//		//限制命令组号
-	//		if(Pos_Group_Select>5 || Pos_Group_Select<1)
-	//			Pos_Group_Select=1;
-	//		//FLASH——>RAM
-	//		STMFLASH_Read(FLASH_SAVE_POS_CMD1+0X00001000*(Pos_Group_Select-1),(uint32_t*)&w_ParLst_Pos_CMD,FLASH_POS_CMD_SIZE);
-	//
-	//		Pw_ModPar=0;
-	//		Pw_ParInitial=0;
-	//	}
+	if(Pw_ModPar==2000 && Pw_ParInitial==4000)
+		{
+			//限制命令组号
+			if(Pos_Group_Select>5 || Pos_Group_Select<1)
+				Pos_Group_Select=1;
+			//FLASH——>RAM
+			STMFLASH_Read(FLASH_SAVE_POS_CMD1+0X00001000*(Pos_Group_Select-1),(uint32_t*)&w_ParLst_Pos_CMD,FLASH_POS_CMD_SIZE);
+	
+			Pw_ModPar=0;
+			Pw_ParInitial=0;
+		}
+}
+
+//清零位置命令
+void ParLst_Init_Group2Zero(void)
+{
+	if(Pw_ModPar==2000 && Pw_ParInitial==9876)
+	{
+		//限制命令组号
+		if(Pos_Group_Select>5 || Pos_Group_Select<1)
+			Pos_Group_Select=1;
+		//清零位置命令
+		//从Driver1_Cmd_Group1中读出，写入到FLASH_SAVE_ADDR1的FLASH中		
+		// if(Pos_Group_Select==1)	
+		// 	STMFLASH_Write(FLASH_SAVE_POS_CMD1,(u32*)Pos_Cmd_Group1,FLASH_POS_CMD_SIZE);		
+		// else if(Pos_Group_Select==2)
+		// 	STMFLASH_Write(FLASH_SAVE_POS_CMD2,(u32*)Pos_Cmd_Group2,FLASH_POS_CMD_SIZE);
+		// else if(Pos_Group_Select==3)
+		// 	STMFLASH_Write(FLASH_SAVE_POS_CMD3,(u32*)Pos_Cmd_Group3,FLASH_POS_CMD_SIZE);	
+		// else if(Pos_Group_Select==4)
+		// 	STMFLASH_Write(FLASH_SAVE_POS_CMD4,(u32*)Pos_Cmd_Group4,FLASH_POS_CMD_SIZE);
+		// else if(Pos_Group_Select==5)
+		// 	STMFLASH_Write(FLASH_SAVE_POS_CMD5,(u32*)Pos_Cmd_Group5,FLASH_POS_CMD_SIZE);	
+
+		//FLASH——>RAM，从FLASH中读出保存的位置命令，读到RAM中
+//		ParArrayRead_Word((u32*)&w_ParLst_Pos_CMD,(u32*)Pos_Cmd_Group1,FLASH_POS_CMD_SIZE);
+		STMFLASH_Read(FLASH_SAVE_POS_CMD1+0X00001000*(Pos_Group_Select-1),(u32*)&w_ParLst_Pos_CMD,FLASH_POS_CMD_SIZE);		
+		
+		Pw_ModPar=0;
+		Pw_ParInitial=0;
+	}	
 }
 
 //清零位置
 void ParLst_Init_Pos2Zero(void)
 {
-	//	if(Pw_ModPar==2000 && Pw_ParInitial==5432)
-	//	{
-	//		//清零位置
-	//		//FLASH<——程序数组
-	//		STMFLASH_Write(FLASH_SAVE_POSTION1,(uint32_t*)Pos_Init,FLASH_POS_SIZE);
-	//		//RAM<——程序数组，初始化位置，清零
-	//		ParArrayRead_Word((uint32_t*)&w_ParLst_PosPar,(uint32_t*)Pos_Init,FLASH_POS_SIZE);
-	//
-	//		Pw_ModPar=0;
-	//		Pw_ParInitial=0;
-	//	}
+		if(Pw_ModPar==2000 && Pw_ParInitial==5432)
+		{
+			//清零位置
+			//FLASH<——程序数组
+			// STMFLASH_Write(FLASH_SAVE_POSTION1,(uint32_t*)Pos_Init,FLASH_POS_SIZE);
+			//RAM<——程序数组，初始化位置，清零
+			ParArrayRead_Word((uint32_t*)&w_ParLst_PosPar,(uint32_t*)Pos_Init,FLASH_POS_SIZE);
+	
+			Pw_ModPar=0;
+			Pw_ParInitial=0;
+		}
 }
 
 void SavePar_Prompt(void) // 保存参数+状态提示
@@ -1210,7 +1238,7 @@ void ParLimit(void) // 参数限制
 		Pw_Driver1_Pluse = 10000; //发送的脉冲数
 
 	if (Pw_Driver1_AccTime == 0)
-		Pw_Driver1_AccTime = 100; //加速度
+		Pw_Driver1_AccTime = 500; //加速度
 
 	if (Pw_Driver1_Speed == 0)
 		Pw_Driver1_Speed = 1000; //设定速度
@@ -1409,4 +1437,26 @@ void DigitalIn(void)
 	FilterDI();
 
 	K_StopRun = DIConfigValue(1); // 启动停止					//注意： 闭合时，运行。断开时，停止运行。
+}
+
+
+
+//通过开关量输入控制启停
+void Manual_Control(void)
+{
+	if(!Old_K_StopRun)
+	{
+		if(K_StopRun)												//注意： 闭合时，运行。断开时，停止运行。
+		{
+			if(Pw_StepAutoMode==0 && F_ForceReseting==0 && Pw_TouchRunStop==1)			//Pw_StepAutoMode=1，手动模式（默认值）；=0，全自动模式
+			{
+				Pw_TouchRunStop=0;									//Pw_TouchRunStop=0，启动;=1停止
+			}
+			else if ( Pw_StepAutoMode==0 && Pw_TouchRunStop==0 && F_AskStop==0 && F_Starting==0 && F_Stoping==0 && F_ForceReseting==0)
+			{
+				Pw_TouchRunStop=1;
+			}		
+		}
+	}
+	Old_K_StopRun=K_StopRun;
 }

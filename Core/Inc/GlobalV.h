@@ -261,20 +261,7 @@ uint8_t F_AllRdy; //所有电机都Ready标志
 uint8_t F_AllRun;  //所有电机处于RUN标志
 uint8_t F_Reseted; //复位到原点标志
 
-extern uc16 w_ParBootLst[];
-extern uint32_t Driver1_Cmd_Group1[];
-extern uint32_t Driver2_Cmd_Group1[];
-extern uint32_t Driver3_Cmd_Group1[];
-extern uint32_t Driver4_Cmd_Group1[];
-extern uint32_t Driver5_Cmd_Group1[];
-extern uint32_t Driver6_Cmd_Group1[];
 
-extern sc32 Pos_Init[];
-extern sc32 Pos_Cmd_Group1[];
-extern sc32 Pos_Cmd_Group2[];
-extern sc32 Pos_Cmd_Group3[];
-extern sc32 Pos_Cmd_Group4[];
-extern sc32 Pos_Cmd_Group5[];
 
 s32 *arr_p1;
 s32 *arrp_p1_Last; //保存上一条指令的命令指针
@@ -458,6 +445,13 @@ uint8_t Driver3_Cmd_Data[9];
 uint8_t Driver4_Cmd_Data[9];
 uint8_t Driver5_Cmd_Data[9];
 uint8_t Driver6_Cmd_Data[9];
+
+u8 Driver1_Pos_Start_Sort; //1#伺服，=0，表示还未写入到命令缓冲区；=1，表示已经写入到命令缓冲区；=2，表示已经发送
+u8 Driver2_Pos_Start_Sort;
+u8 Driver3_Pos_Start_Sort;
+u8 Driver4_Pos_Start_Sort;
+u8 Driver5_Pos_Start_Sort;
+u8 Driver6_Pos_Start_Sort;
 
 uint8_t Driver1_Status_Sort; //1#伺服，=2，表示已经发送；=3，表示已经接收
 uint8_t Driver2_Status_Sort;
@@ -664,5 +658,19 @@ uint8_t WK_B_Com4Cmd01;
 uint8_t WK_B_Com4Cmd06;
 uint16_t T_WK_NoRcv4Count; // 没有接收计数器
 uint16_t C_WK_NoRcv4Count;
+
+s16	Com1_Driver1_Queue_Rear;			//命令队列中的命令数量，队尾指针
+s16	Com1_Driver2_Queue_Rear;			//命令队列中的命令数量，队尾指针
+s16	Com1_Driver1_Queue_Front;			//命令队列中的当前要出队的，队头指针
+s16	Com1_Driver2_Queue_Front;			//命令队列中的当前要出队的，队头指针
+s16	Com2_Driver3_Queue_Rear;			//命令队列中的命令数量，队尾指针
+s16	Com2_Driver4_Queue_Rear;			//命令队列中的命令数量，队尾指针
+s16	Com2_Driver3_Queue_Front;			//命令队列中的当前要出队的，队头指针
+s16	Com2_Driver4_Queue_Front;			//命令队列中的当前要出队的，队头指针
+s16	Com3_Driver5_Queue_Rear;			//命令队列中的命令队尾指针
+s16	Com3_Driver6_Queue_Rear;			//命令队列中的命令队尾指针
+s16	Com3_Driver5_Queue_Front;			//命令队列中的当前要出队的，队头指针
+s16	Com3_Driver6_Queue_Front;			//命令队列中的当前要出队的，队头指针
+
 
 #endif /* __GLOBALV_H */

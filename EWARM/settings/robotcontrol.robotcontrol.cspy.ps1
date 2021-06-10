@@ -23,9 +23,9 @@
 
 if ($debugfile -eq "")
 {
-& "D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "D:\YLS\ECMXF\Robot\EWARM\settings\robotcontrol.robotcontrol.general.xcl" --backend -f "D:\YLS\ECMXF\Robot\EWARM\settings\robotcontrol.robotcontrol.driver.xcl" 
+& "D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "D:\YLS\test\ECM-XF\EWARM\settings\robotcontrol.robotcontrol.general.xcl" --backend -f "D:\YLS\test\ECM-XF\EWARM\settings\robotcontrol.robotcontrol.driver.xcl" 
 }
 else
 {
-& "D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "D:\YLS\ECMXF\Robot\EWARM\settings\robotcontrol.robotcontrol.general.xcl" --debug_file=$debugfile --backend -f "D:\YLS\ECMXF\Robot\EWARM\settings\robotcontrol.robotcontrol.driver.xcl" 
+& "D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.2\common\bin\cspybat" -f "D:\YLS\test\ECM-XF\EWARM\settings\robotcontrol.robotcontrol.general.xcl" --debug_file=$debugfile --backend -f "D:\YLS\test\ECM-XF\EWARM\settings\robotcontrol.robotcontrol.driver.xcl" 
 }
