@@ -59,7 +59,7 @@ void Control_Hand(void);						  //控制电磁阀(机械手)开通，关断
 void BRAKE_Control(void);						  //刹车控制
 void is_Reseted(void);							  //判断复位到原点子程序
 void Send_StopCMD(void);						  //发送停机命令子程序
-void ParLst_Init_Group(void);					  //按组进行参数初始化
+void PosCMD_ReadFrom_FLASH(void);				  //按组进行参数初始化
 void Driver_Save_Pos(void);						  //写入位置参数到伺服驱动器
 s16 Move_Cmd_Queue(u8 driver_no);				  //移动队列指针
 void Clear_Cmd_Queue(void);						  //清命令缓冲区
@@ -691,7 +691,7 @@ void Reset_Routine(void)
 	if (num4 > 0.0f)
 		temp_pulse4 = (s32)(num4 + 0.5f);
 	else
-		temp_pulse4 =(s32)(num4 - 0.5f);
+		temp_pulse4 = (s32)(num4 - 0.5f);
 	Locate_Rle_1(Pw_EquipmentNo4, temp_pulse4, Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
 	Driver4_Pos_Start_Sort = 1;
 

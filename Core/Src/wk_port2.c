@@ -126,7 +126,7 @@ void WK_Com2_SlaveSend(void) // 串口1从机发送
     WK_Txd2Buffer[1] = WK_Rcv2Buffer[1];     // 功能码
     WK_Txd2Buffer[2] = WK_Rcv2Buffer[5] * 2; // WK_Rcv2Buffer[5]=字数 　
     //
-    if (WK_w_Com2RegAddr < 0x800 && Pw_ComBufType == 1) // 常规查询 Pw_ComBufType==1 2016.4.21
+    if (WK_w_Com2RegAddr < 0x800) // 常规查询
     {
       p_wRead = w_ParLst; // PAR区
       p_bMove = WK_Txd2Buffer;
@@ -138,7 +138,7 @@ void WK_Com2_SlaveSend(void) // 串口1从机发送
         *(p_bMove + 3 + k * 2 + 1) = m;
       }
     }
-    else if (WK_w_Com2RegAddr >= 5000 && Pw_ComBufType == 1) // 读取电机设定参数，参数地址减5000
+    else if (WK_w_Com2RegAddr >= 5000) // 读取电机设定参数，参数地址减5000
     {
       p_wRead2 = w_ParLst_Drive; // PAR区
       p_bMove = WK_Txd2Buffer;

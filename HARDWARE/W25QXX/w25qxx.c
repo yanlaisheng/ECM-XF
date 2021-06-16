@@ -646,7 +646,7 @@ void W25qxx_WriteBytes_Page(u8 *pBuffer, u32 WriteAddr_inBytes, u16 NumByteToWri
 	w25qxx.Lock = 1;
 #if (_W25QXX_DEBUG == 1)
 	uint32_t StartTime = HAL_GetTick();
-	printf("w25qxx WriteByte 0x%02X at address %d begin...", pBuffer, WriteAddr_inBytes);
+	printf("w25qxx WriteByte 0x%02X at address %d begin...\r\n", pBuffer, WriteAddr_inBytes);
 #endif
 	W25qxx_WaitForWriteEnd();
 	W25qxx_WriteEnable();
@@ -792,7 +792,9 @@ void W25qxx_WriteSector(uint8_t *pBuffer, uint32_t Sector_Address, uint32_t Offs
 	W25qxx_Delay(100);
 #endif
 }
+
 //###################################################################################################################
+//按块地址来写
 void W25qxx_WriteBlock(uint8_t *pBuffer, uint32_t Block_Address, uint32_t OffsetInByte, uint32_t NumByteToWrite_up_to_BlockSize)
 {
 	if ((NumByteToWrite_up_to_BlockSize > w25qxx.BlockSize) || (NumByteToWrite_up_to_BlockSize == 0))
@@ -1041,7 +1043,9 @@ void W25QXX_Write_WithErase(u8 *pBuffer, u32 WriteAddr, u16 NumByteToWrite)
 	secpos = WriteAddr / 4096; //扇区地址
 	secoff = WriteAddr % 4096; //在扇区内的偏移
 	secremain = 4096 - secoff; //扇区剩余空间大小
-	//printf("ad:%X,nb:%X\r\n",WriteAddr,NumByteToWrite);//测试用
+#if (_W25QXX_DEBUG == 1)
+	printf("W25QXX_Write_WithErase address:%X,number bytes:%X\r\n", WriteAddr, NumByteToWrite); //测试用
+#endif
 	if (NumByteToWrite <= secremain)
 		secremain = NumByteToWrite; //不大于4096个字节
 	while (1)
@@ -1191,11 +1195,12 @@ uint8_t SPI_FLASH_SendByte(uint8_t Data)
 *******************************************************************************/
 void SPI_FMRAM_BufferWrite(u8 *pBuffer, u16 WriteAddr, u16 NumByteToWrite)
 {
+	B_SelCS = CS_FMRAM1; //ZCL 2020.3.18
+
 	/* Enable the write access to the FLASH */ //0. 使能FLASH写使能
 	SPI_FLASH_WriteEnable();
 
 	/* Select the FLASH: Chip Select low */ //1. 使能FLASH片选
-	B_SelCS = CS_FMRAM1;					//ZCL 2020.3.18
 	SPI_FLASH_CS_LOW();
 	/* Send "Write to Memory " instruction */ //2. 发送写指令
 	SPI_FLASH_SendByte(WRITE);

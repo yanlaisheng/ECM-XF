@@ -30,12 +30,11 @@ extern "C"
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "typedef.h"
 
   /* Private includes ----------------------------------------------------------*/
   /* USER CODE BEGIN Includes */
-  //#include "wk_port1.h"
 #include "GlobalConst.h"
+#include "typedef.h"
   /* USER CODE END Includes */
 
   /* Exported types ------------------------------------------------------------*/
@@ -46,6 +45,44 @@ extern "C"
   extern uint8_t WkPort4_RcvBuffer[RCV1_MAX]; // 接收缓冲区
   extern char printbuf[128];
   extern UART_HandleTypeDef huart3;
+
+  void Driver_Control(void);                        //电机运行控制
+  void Reset_Routine(void);                         //复位子程序
+  void Reset_Drivers(void);                         //复位电机到初始位置
+  void Stop_Driver(u8 driver_no);                   //发送停机命令
+  void Control_Hand(void);                          //控制电磁阀(机械手)开通，关断
+  void BRAKE_Control(void);                         //刹车控制
+  void is_Reseted(void);                            //判断复位到原点子程序
+  void Send_StopCMD(void);                          //发送停机命令子程序
+  void PosCMD_ReadFrom_exFLASH(void);               //按组进行参数初始化
+  void Driver_Save_Pos(void);                       //写入位置参数到伺服驱动器
+  s16 Move_Cmd_Queue(u8 driver_no);                 //移动队列指针
+  void Clear_Cmd_Queue(void);                       //清命令缓冲区
+  void sort(s32 *a, int l);                         //数组排序函数
+  void sort_f(float *a, int l);                     //浮点数数组排序函数
+  u8 Cal_Pos_Speed(void);                           //计算脉冲函数
+  void Cal_One_Pos_Speed(s32 Pos_No1, s32 Pos_No2); //计算一个位置的脉冲与速度
+  void Record_Current_Pos(void);                    //记录当前位置
+  void Run_to_One_Pos(s32 Cmd_No);                  //运行到某一命令号对应的位置点
+  void Fill_Cmd(void);                              //填充命令
+  void Cal_Sum_Err(u8 Driver_No);                   //计算四舍五入带来的误差
+  void Cal_Run_to_Next_Pos(s32 Cmd_No);             //从当前位置同步运行到某一命令号对应的位置点
+  void Send_Driver_CMD(u8 driver_no, u8 Modbus_CMD_No, u32 Par_addr, u32 Par_content);
+  //清零位置及位置命令
+  extern void ParLst_Init_Group2Zero(void);
+  //清零位置
+  void ParLst_Init_Pos2Zero(void);
+  //编码器位置手动调整函数
+  void Pos_Manual_Adj(void);
+  //调整位置
+  void Adj_Pos(u8 driver_no, s32 PosErr_Muti, s32 PosErr_Sing);
+  //发送位置数据
+  void Send_Pos_Data(void);
+  //校验位置命令是否正确
+  void Verify_Pos_CMD(void);
+  void Limit_Max_Pos(void); //限制最大最小位置范围
+  //判断某台电机是否超出位置范围
+  u8 Judge_OverPos(u8 Driver_No);
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -75,44 +112,7 @@ extern "C"
   /* USER CODE END EM */
 
   /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
-extern void Driver_Control(void); //电机运行控制
-extern void Reset_Routine(void);						  //复位子程序
-extern void Reset_Drivers(void);						  //复位电机到初始位置
-extern void Stop_Driver(u8 driver_no);					  //发送停机命令
-extern void Control_Hand(void);						  //控制电磁阀(机械手)开通，关断
-extern void BRAKE_Control(void);						  //刹车控制
-extern void is_Reseted(void);							  //判断复位到原点子程序
-extern void Send_StopCMD(void);						  //发送停机命令子程序
-extern void ParLst_Init_Group(void);					  //按组进行参数初始化
-extern void Driver_Save_Pos(void);						  //写入位置参数到伺服驱动器
-extern s16 Move_Cmd_Queue(u8 driver_no);				  //移动队列指针
-extern void Clear_Cmd_Queue(void);						  //清命令缓冲区
-extern void sort(s32 *a, int l);						  //数组排序函数
-extern void sort_f(float *a, int l);					  //浮点数数组排序函数
-extern u8 Cal_Pos_Speed(void);							  //计算脉冲函数
-extern void Cal_One_Pos_Speed(s32 Pos_No1, s32 Pos_No2); //计算一个位置的脉冲与速度
-extern void Record_Current_Pos(void);					  //记录当前位置
-extern void Run_to_One_Pos(s32 Cmd_No);				  //运行到某一命令号对应的位置点
-extern void Fill_Cmd(void);							  //填充命令
-extern void Cal_Sum_Err(u8 Driver_No);					  //计算四舍五入带来的误差
-extern void Cal_Run_to_Next_Pos(s32 Cmd_No);			  //从当前位置同步运行到某一命令号对应的位置点
-extern void Send_Driver_CMD(u8 driver_no, u8 Modbus_CMD_No, u32 Par_addr, u32 Par_content);
-//清零位置及位置命令
-extern void ParLst_Init_Group2Zero(void);
-//清零位置
-extern void ParLst_Init_Pos2Zero(void);
-//编码器位置手动调整函数
-extern void Pos_Manual_Adj(void);
-//调整位置
-extern void Adj_Pos(u8 driver_no, s32 PosErr_Muti, s32 PosErr_Sing);
-//发送位置数据
-extern void Send_Pos_Data(void);
-//校验位置命令是否正确
-extern void Verify_Pos_CMD(void);
-extern void Limit_Max_Pos(void); //限制最大最小位置范围
-//判断某台电机是否超出位置范围
-u8 Judge_OverPos(u8 Driver_No);
+  void Error_Handler(void);
 
   /* USER CODE BEGIN EFP */
   void SystemClock_Config(void);
@@ -210,6 +210,8 @@ u8 Judge_OverPos(u8 Driver_No);
 #define DI27_GPIO_Port GPIOE
 #define DI28_Pin GPIO_PIN_15
 #define DI28_GPIO_Port GPIOE
+#define FRAM_CS_Pin GPIO_PIN_12
+#define FRAM_CS_GPIO_Port GPIOB
 #define FLASH_CS_Pin GPIO_PIN_8
 #define FLASH_CS_GPIO_Port GPIOD
 #define DI1_Pin GPIO_PIN_10

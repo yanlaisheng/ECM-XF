@@ -22,89 +22,27 @@
 #include "GlobalConst.h"
 
 // (定义变量)
-extern uint8_t VfNo;        // 变频泵序号
-extern uint8_t VfNext;      // 可以启动的下一台变频泵
 extern uint8_t SoftClock[]; // 辅助时钟
-//
-extern uint8_t Vf_No;
-extern uint8_t F_AskStop1;
-extern uint8_t RealClock[];      // 实时时钟
-extern uint8_t B_PumpBad[];      // B_PumpBad[0]未使用,泵1-5坏标志
-extern uint8_t B_PumpManu[];     // 泵手动状态1-5标志(检修用)
-extern uint8_t B_SaveSetP;       // 保存设定压力 标志字节
-extern uint8_t B_SaveVoiceValue; // 保存音量大小 标志字节
-extern uint8_t B_ReadVfPar;      // 读取变频器数据
-extern uint8_t B_ModSelParValue; // 修改选择的参数值
-extern uint8_t F_ComErrorPump1;
-extern uint8_t F_ComErrorPump2;
-extern uint8_t B_ComErrorPump1;
-extern uint8_t B_ComErrorPump2;
-extern uint8_t B_RemoteStop1;
-extern uint8_t B_RemoteStop2;
-extern uint8_t B_MaxSupplyStop1;
-extern uint8_t B_MaxSupplyStop2;
-extern uint8_t F_ComErrorPump3;
-extern uint8_t F_ComErrorPump4;
-extern uint8_t B_ComErrorPump3;
-extern uint8_t B_ComErrorPump4;
-extern uint8_t B_RemoteStop3;
-extern uint8_t B_RemoteStop4;
-extern uint8_t B_MaxSupplyStop3;
-extern uint8_t B_MaxSupplyStop4;
-extern uint8_t F_HighYCSetP;
-extern uint8_t S_HighYCSetP;
-extern uint8_t F_HaveWater_MaxSupply;
-extern uint8_t F_InPPid;
-extern uint8_t F_HengYa;
-extern uint8_t F_waterYeWeiHigh;
-extern uint8_t F_ZhuoDuHigh;
-extern uint8_t F_YuLvHigh;
-extern uint8_t F_PhHigh;
-extern uint8_t F_PhLow;
+extern uint8_t RealClock[]; // 实时时钟
 
-extern uint8_t F_Pump1RunOverTime;
-extern uint8_t F_Pump2RunOverTime;
-extern uint8_t F_Pump3RunOverTime;
-extern uint8_t F_Pump4RunOverTime;
-extern uint8_t F_YeJianSmall;
-extern uint8_t F_HengVfPanDuan_S;
-extern uint8_t F_HengVfPanDuan_L;
-
-extern uint8_t F_PumpExit;
-extern uint8_t PumpExit[];
-
-extern uint8_t DInb[];  // 开关量输入参数列表区
-extern uint8_t DOutb[]; // 开关量输出参数列表区
-//extern uint8_t  NBComBuf[];		// 宁波通讯缓存 2007.10.30
-extern uint16_t w_AI[]; // 模拟量输入参数列表区
-//extern uint16_t  w_AQ[];			// 模拟量输出参数列表区
+extern uint8_t DInb[];          // 开关量输入参数列表区
+extern uint8_t DOutb[];         // 开关量输出参数列表区
 extern uint16_t w_ParLst[];     // 参数字列表区
 extern s32 w_ParLst_Drive[];    //YLS 2020.06.23
 extern uint32_t w_ParLst_POS[]; //YLS 2020.11.27
-
-// 2008.12.11
-extern uint8_t B_SelCS;
-extern uint16_t w_FaultNo[];
-extern uint16_t w_ModRealTimeNo; // 修改实时时钟的序号
-extern uint16_t w_PreRecNo;      // 上次记录号
-
 //
 // 以下为用外部字节定义的开关量输入，开关量输出部分
 // 硬件定义
 //1  开关量输入 使用
-extern uint8_t K_ManuAuto; // 手动.自动
-extern uint8_t Q_VfStop;   // 空转
-extern uint8_t Q_RunGPRS;
+extern uint8_t K_ManuAuto;      // 手动.自动
+extern uint8_t Q_VfStop;        // 空转
 extern uint8_t F_ManualRunStop; // 手动启动停止标志
 extern uint8_t F_TouchRunStop;  // 触摸启动停止
 
-extern uint8_t F_DealSmall; // 正在处理小流量标志
-
-extern uint8_t F_AskStop; // 请求停机标志
-//extern uint8_t  F_AskExchange;			// 请求交换标志
-//extern uint8_t  F_DelayCheckVvvfAlarm;	// 第一次上电延时检测变频器报警5秒种后再检测
-
-extern uint8_t F_ModRealTime; // 修改实时时钟
+extern uint8_t F_AskStop;        // 请求停机标志
+extern uint8_t F_ModRealTime;    // 修改实时时钟
+extern uint16_t w_ModRealTimeNo; // 修改实时时钟的序号
+extern uint8_t B_SelCS;
 
 //************com1**************
 extern uint8_t Txd1Buffer[TXD1_MAX]; // 发送缓冲区
@@ -589,7 +527,6 @@ extern uint8_t Com2_Driver3_Write_BUFF[COM_CMD_SIZE * COM_CMD_NUM];
 extern uint8_t Com2_Driver4_Write_BUFF[COM_CMD_SIZE * COM_CMD_NUM];
 extern uint8_t Com3_Driver5_Write_BUFF[COM_CMD_SIZE * COM_CMD_NUM];
 extern uint8_t Com3_Driver6_Write_BUFF[COM_CMD_SIZE * COM_CMD_NUM];
-extern uint8_t Com4_Write_BUFF[COM_CMD_SIZE * COM_CMD_NUM];
 
 extern uc16 w_ParBootLst[];
 extern uint32_t Driver1_Cmd_Group1[];
@@ -606,8 +543,8 @@ extern sc32 Pos_Cmd_Group3[];
 extern sc32 Pos_Cmd_Group4[];
 extern sc32 Pos_Cmd_Group5[];
 
-// extern	uint32_t step_to_run; //要匀速运行的步数       总共运行步数 = ACCELERATED_SPEED_LENGTH*2 + step_to_run
-// extern	float fre[ACCELERATED_SPEED_LENGTH]; //数组存储加速过程中每一步的频率
-// extern	unsigned short period[ACCELERATED_SPEED_LENGTH]; //数组储存加速过程中每一步定时器的自动装载值
+//YLS 2021.06.12
+extern u8 Flash_Busy_F; //FLASH操作中，忙碌标志
+extern uint8_t Old_K_StopRun;
 
 #endif /* __GLOBALV_EXTERN_H */

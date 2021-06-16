@@ -132,30 +132,7 @@ GETCHAR_PROTOTYPE
 	HAL_UART_Receive(&huart3, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
 	return ch;
 }
-//int ECMSPIReadWrite(uint8_t *rdata, uint8_t *wdata, int rwlength)
-//{
-//	uint8_t *pTxBuffPtr; /*!< Pointer to SPI Tx transfer Buffer        */
-//	uint8_t *pRxBuffPtr; /*!< Pointer to SPI Rx transfer Buffer        */
-//	pRxBuffPtr = (uint8_t *)rdata;
-//	pTxBuffPtr = (uint8_t *)wdata;
-//	//如果BUSY引脚是高电平，则一直等待
-//	// while (HAL_GPIO_ReadPin(BUSY_GPIO_Port, BUSY_Pin))
-//	;
-//	SPI_ECAT_CS_ON;
-//	HAL_SPI_TransmitReceive(&hspi3, wdata, rdata, rwlength, 10);
-//	SPI_ECAT_CS_OFF;
-//	return 0;
-//}
 
-int userGetchar(void)
-{
-	uint8_t charbuf;
-	HAL_StatusTypeDef ret;
-	ret = HAL_UART_Receive(&huart3, &charbuf, 1, 0xffffffff);
-	if (ret)
-		return -ret;
-	return charbuf;
-}
 /* USER CODE END 0 */
 
 /**
@@ -164,9 +141,8 @@ int userGetchar(void)
   */
 int main(void)
 {
-	u32 cyc_counter=0;
 	/* USER CODE BEGIN 1 */
-
+	u32 cyc_counter = 0;
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -209,7 +185,7 @@ int main(void)
 
 	Init_WK_Uart(); //初始化WK2124扩展串口
 
-	Test_EEPROM(); //测试EEPROM
+	// Test_EEPROM(); //测试EEPROM
 
 	//EtherCAT初始化
 	// Init_EtherCAT();
@@ -223,52 +199,53 @@ int main(void)
 	Variable_Init(); // Initialize VARIABLE
 	ParLimit();		 // 参数限制
 
-	Send_Driver_CMD(Pw_EquipmentNo3,06,0x8910,0);						//写驱动器3的P8910参数=0，RDY状态
-	Send_Driver_CMD(Pw_EquipmentNo3,06,0x0029,1);						//写驱动器3的P0029参数=1，使用外部制动电阻
-	Send_StopCMD();	
+	Send_Driver_CMD(Pw_EquipmentNo3, 06, 0x8910, 0); //写驱动器3的P8910参数=0，RDY状态
+	Send_Driver_CMD(Pw_EquipmentNo3, 06, 0x0029, 1); //写驱动器3的P0029参数=1，使用外部制动电阻
+	Send_StopCMD();
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
-		Boot_ParLst ();								// 初始化设定参数	
-		ParLst_Init_Group();						// 按组进行参数初始化	
-		ParLst_Init_Group2Zero();					//清零位置命令
-		ParLst_Init_Pos2Zero();						//清零位置
-		Pos_Manual_Adj();							//手动调整编码器位置
-		ParLimit();									// 参数限制		
-		ReadWriteRealTime ();						// 读写实时时钟 ISL1208	
+		Boot_ParLst();			   //初始化设定参数，命令：Pw_ModPar = 2000，Pw_ParInitial = 4321
+		PosCMD_SaveTo_FLASH();	   //将RAM中的位置命令到外部FLASH和FRAM，命令：Pw_ModPar == 2000，Pw_ParInitial == 8000
+		PosCMD_ReadFrom_exFLASH(); //从外部FLASH按组号读取位置命令到RAM和FRAM，命令：Pw_ModPar = 2000，Pw_ParInitial = 4000
+		ParLst_Init_Group2Zero();  //清零位置命令，命令：Pw_ModPar == 2000 && Pw_ParInitial == 9876
+		ParLst_Init_Pos2Zero();	   //清零位置，命令：Pw_ModPar == 2000 && Pw_ParInitial == 5432
+		Pos_Manual_Adj();		   //手动调整编码器位置
+		ParLimit();				   // 参数限制
+		ReadWriteRealTime();	   // 读写实时时钟 ISL1208
 
-		EquipStatus ();								// 设备状态
-		KglStatus ();								// 开关量状态	
-		DigitalIn();								// DI
-		Manual_Control ();							// 手动控制启停
-		
-		SavePar_Prompt();							// 定时保存设定参数到FLASH"+"状态提示
-		ForceSavePar();								// 定时强制保存参数
-		
-		Time_Output();								// 软件时钟输出	
+		EquipStatus(); // 设备状态
+		KglStatus();   // 开关量状态
+		DigitalIn();   // DI
+					   //		Manual_Control(); // 手动控制启停
+
+		// SavePar_Prompt();	 // 定时保存设定参数到FLASH"+"状态提示
+		// ForceTime_SavePar(); // 定时强制保存参数
+
+		Time_Output(); // 软件时钟输出
 
 		UART_TX();
 
-		Verify_Pos_CMD();							//校验发送的位置指令是否正确写入
-		Driver_Control();							//电机运行控制
-		Reset_Drivers();							//有复位命令，则复位到原点
-		
-		BRAKE_Control();							//刹车控制
-		is_Reseted();								//判断是否在原点
-		Cal_Pos_Speed();							//计算脉冲值和速度
-		
-		Record_Current_Pos();						//记录当前位置
-		Control_Hand();								//机械手控制
-		Limit_Max_Pos();							//限制最大最小位置范围
+		//		Verify_Pos_CMD(); //校验发送的位置指令是否正确写入
+		//		Driver_Control(); //电机运行控制
+		//		Reset_Drivers();  //有复位命令，则复位到原点
+		//
+		//		BRAKE_Control(); //刹车控制
+		//		is_Reseted();	 //判断是否在原点
+		//		Cal_Pos_Speed(); //计算脉冲值和速度
+		//
+		//		Record_Current_Pos(); //记录当前位置
+		//		Control_Hand();		  //机械手控制
+		//		Limit_Max_Pos();	  //限制最大最小位置范围
 		// IWDG_Feed();								// 喂狗	2013.7.3
-		
+
 		cyc_counter++;
-		Pr_cyclecounter_show=cyc_counter&0x0000FFFF;
-		Pr_cyclecounter_HW=(cyc_counter&0xFFFF0000)>>16;
-		// TEST_Send_Pwm();
+		Pr_cyclecounter_show = cyc_counter & 0x0000FFFF;
+		Pr_cyclecounter_HW = (cyc_counter & 0xFFFF0000) >> 16;
+		TEST_Send_Pwm();
 
 		// Rd2Wr_IO();
 
@@ -546,6 +523,7 @@ void Test_EEPROM(void)
 	uint8_t read_buf[10] = {0};
 	uint8_t write_buf[10] = {0};
 	uint32_t device_id;
+	B_SelCS = CS_Flash1;
 
 	W25qxx_Init();
 
@@ -555,18 +533,21 @@ void Test_EEPROM(void)
 		delay_ms(500);
 		printf("Please Check!      ");
 		delay_ms(500);
-		HAL_GPIO_TogglePin(LED_H63_GPIO_Port, LED_H63_Pin); //DS0闪烁
 	}
 
 	printf("W25Q16 Ready!\r\n");
-	FLASH_SIZE = 64 * 1024 * 1024;
-	printf("Start Write W25Q16....\r\n");
+	FLASH_SIZE = 2 * 1024 * 1024; //W25Q16，容量2MB
+	printf("Start Write W25Q16....——1\r\n");
 	SPI_FLASH_BufferWrite((u8 *)TEXT_Buffer, FLASH_SIZE - 100, SIZE); //从倒数第100个地址处开始,写入SIZE长度的数据
-	printf("W25Q16 Write Finished!\r\n");							  //提示传送完成
+	printf("W25Q16 Write Finished!——1\r\n");						  //提示传送完成
+
+	printf("Start Write W25Q16....——2\r\n");
+	W25QXX_Write_WithErase((u8 *)TEXT_Buffer, 5, SIZE);
+	printf("W25Q16 Write Finished!——2\r\n"); //提示传送完成
 
 	printf("Start Read W25Q16.... \r\n");
-	W25qxx_ReadBytes(datatemp, FLASH_SIZE - 100, SIZE); //从倒数第100个地址处开始,读出SIZE个字节
-	printf("The Data Readed Is:   \r\n");				//提示传送完成
+	W25qxx_ReadBytes(datatemp, 5, SIZE);  //从倒数第100个地址处开始,读出SIZE个字节
+	printf("The Data Readed Is:   \r\n"); //提示传送完成
 	for (i = 0; i < sizeof(datatemp); i++)
 		printf(" %d \r\n", datatemp[i]); //显示读到的字符串
 
@@ -612,6 +593,21 @@ void Test_EEPROM(void)
 		printf("[0x%08x]:0x%02x\r\n", i, *(read_buf + i));
 	}
 	printf("-------- read data end! -----------\r\n");
+
+	/* 写FRAM数据 */
+	printf("-------- write data to FRAM start-----------\r\n");
+	// B_SelCS = CS_FMRAM1;
+	SPI_FMRAM_BufferWrite((u8 *)TEXT_Buffer, 0, 10);
+	printf("-------- write data to FRAM end-----------\r\n");
+
+	/* 读FRAM数据 */
+	printf("-------- read data from FRAM start-----------\r\n");
+	SPI_FMRAM_BufferRead(read_buf, 0, 10);
+	for (i = 0; i < 10; i++)
+	{
+		printf("[0x%08x]:0x%02x\r\n", i, *(read_buf + i));
+	}
+	printf("-------- read data from FRAM end-----------\r\n");
 }
 
 //初始化扩展串口
@@ -747,17 +743,29 @@ void UART_TX(void)
 //测试发PWM波
 void TEST_Send_Pwm(void)
 {
-	if (Pw_Driver1_Enable == 1)
+	if (!Old_K_StopRun)
 	{
-		Pw_Driver1_Enable = 0;
-		HAL_Delay(100);
-		//发送脉冲
-		Run_Motor_S(1, M1_CLOCKWISE, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Driver1_Speed, Pw_Motor1_STEP_PARA);
-		Run_Motor_S(2, M2_CLOCKWISE, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Driver2_Speed, Pw_Motor2_STEP_PARA);
-		Run_Motor_S(3, M3_CLOCKWISE, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Driver3_Speed, Pw_Motor3_STEP_PARA);
-		Run_Motor_S(4, M4_CLOCKWISE, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Driver4_Speed, Pw_Motor4_STEP_PARA);
-		Run_Motor_S(5, M5_CLOCKWISE, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Driver5_Speed, Pw_Motor5_STEP_PARA);
-		Run_Motor_S(6, M6_CLOCKWISE, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Driver6_Speed, Pw_Motor6_STEP_PARA);
+		if (K_StopRun || Pw_Driver1_Enable) //注意： 闭合时，运行。断开时，停止运行。
+		{
+			Pw_Driver1_Enable = 0;
+			HAL_Delay(100);
+			//发送脉冲
+			Run_Motors_sync(M1_CLOCKWISE, (Pw_Motor1SendPulse_HW << 16) + Pw_Motor1SendPulse, Pw_Motor1_StartSpeed, Pw_Motor1_SetSpeed, Pw_Motor1_ACCSpeed,
+							M2_CLOCKWISE, (Pw_Motor2SendPulse_HW << 16) + Pw_Motor2SendPulse, Pw_Motor2_StartSpeed, Pw_Motor2_SetSpeed, Pw_Motor2_ACCSpeed,
+							M3_CLOCKWISE, (Pw_Motor3SendPulse_HW << 16) + Pw_Motor3SendPulse, Pw_Motor3_StartSpeed, Pw_Motor3_SetSpeed, Pw_Motor3_ACCSpeed,
+							M4_CLOCKWISE, (Pw_Motor4SendPulse_HW << 16) + Pw_Motor4SendPulse, Pw_Motor4_StartSpeed, Pw_Motor4_SetSpeed, Pw_Motor4_ACCSpeed,
+							M5_CLOCKWISE, (Pw_Motor5SendPulse_HW << 16) + Pw_Motor5SendPulse, Pw_Motor5_StartSpeed, Pw_Motor5_SetSpeed, Pw_Motor5_ACCSpeed,
+							M6_CLOCKWISE, (Pw_Motor6SendPulse_HW << 16) + Pw_Motor6SendPulse, Pw_Motor6_StartSpeed, Pw_Motor6_SetSpeed, Pw_Motor6_ACCSpeed);
+
+			// Start_Motor12(M1_CLOCKWISE, 5000, M2_CLOCKWISE, 10000);
+			// Run_Motor_S(1, M1_CLOCKWISE, (Pw_Motor1SendPulse_HW << 16) + Pw_Motor1SendPulse, Pw_Motor1_StartSpeed, Pw_Motor1_SetSpeed, Pw_Motor1_ACCSpeed);
+			// Run_Motor_S(2, M2_CLOCKWISE, (Pw_Motor2SendPulse_HW << 16) + Pw_Motor2SendPulse, Pw_Motor2_StartSpeed, Pw_Motor2_SetSpeed, Pw_Motor2_ACCSpeed);
+			// Run_Motor_S(3, M3_CLOCKWISE, (Pw_Motor3SendPulse_HW << 16) + Pw_Motor3SendPulse, Pw_Motor3_StartSpeed, Pw_Motor3_SetSpeed, Pw_Motor3_ACCSpeed);
+			// Run_Motor_S(4, M4_CLOCKWISE, (Pw_Motor4SendPulse_HW << 16) + Pw_Motor4SendPulse, Pw_Motor4_StartSpeed, Pw_Motor4_SetSpeed, Pw_Motor4_ACCSpeed);
+			// Run_Motor_S(5, M5_CLOCKWISE, (Pw_Motor5SendPulse_HW << 16) + Pw_Motor5SendPulse, Pw_Motor5_StartSpeed, Pw_Motor5_SetSpeed, Pw_Motor5_ACCSpeed);
+			// Run_Motor_S(6, M6_CLOCKWISE, (Pw_Motor6SendPulse_HW << 16) + Pw_Motor6SendPulse, Pw_Motor6_StartSpeed, Pw_Motor6_SetSpeed, Pw_Motor6_ACCSpeed);
+		}
+		Old_K_StopRun = K_StopRun;
 	}
 }
 
@@ -801,6 +809,16 @@ void Rd2Wr_IO(void)
 	HAL_Delay(100);
 	CMD00_GET_STATUS(1);
 	SPI_exchange_polling();
+}
+
+int userGetchar(void)
+{
+	uint8_t charbuf;
+	HAL_StatusTypeDef ret;
+	ret = HAL_UART_Receive(&huart3, &charbuf, 1, 0xffffffff);
+	if (ret)
+		return -ret;
+	return charbuf;
 }
 
 /* USER CODE END 4 */

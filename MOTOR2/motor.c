@@ -9,6 +9,7 @@
 #include "GlobalConst.h"
 // #include "GlobalV.h"
 #include "Macro.h"
+#include "typedef.h"
 
 uint16_t Motor1TimeTable[2 * (STEP_AA + STEP_UA + STEP_RA) + 1] = {0};
 uint16_t Motor1StepTable[2 * (STEP_AA + STEP_UA + STEP_RA) + 1] = {0};
@@ -369,24 +370,24 @@ void CalcMotorPeriStep_CPF(float fstart, float faa, uint16_t step_para, float ta
 	for (i = 0; i < STEP_AA; i++)
 	{
 		fi = GetFreAtTime(fstart, faa, taa, tua, tra, taa / STEP_AA * i);
-		MotorTimeTable[i] = F2TIME_PARA / fi;				  //每步的时间周期，这个地方要注意，容易溢出！——YLS 2021.05.07
-		MotorStepTable[i] = fi * (taa / STEP_AA) / step_para; //每个时钟周期运行的步数
+		MotorTimeTable[i] = (uint16_t)(F2TIME_PARA / fi);				  //每步的时间周期，这个地方要注意，容易溢出！——YLS 2021.05.07
+		MotorStepTable[i] = (uint16_t)(fi * (taa / STEP_AA) / step_para); //每个时钟周期运行的步数
 	}
 	for (i = STEP_AA; i < STEP_AA + STEP_UA; i++)
 	{
 		fi = GetFreAtTime(fstart, faa, taa, tua, tra, taa + (tua / STEP_UA) * (i - STEP_AA));
-		MotorTimeTable[i] = F2TIME_PARA / fi;
-		MotorStepTable[i] = fi * (tua / STEP_UA) / step_para;
+		MotorTimeTable[i] = (uint16_t)(F2TIME_PARA / fi);
+		MotorStepTable[i] = (uint16_t)(fi * (tua / STEP_UA) / step_para);
 	}
 	for (i = STEP_AA + STEP_UA; i < STEP_AA + STEP_UA + STEP_RA; i++)
 	{
 		fi = GetFreAtTime(fstart, faa, taa, tua, tra, taa + tua + tra / STEP_RA * (i - STEP_AA - STEP_UA));
-		MotorTimeTable[i] = F2TIME_PARA / fi;
-		MotorStepTable[i] = fi * (tra / STEP_RA) / step_para;
+		MotorTimeTable[i] = (uint16_t)(F2TIME_PARA / fi);
+		MotorStepTable[i] = (uint16_t)(fi * (tra / STEP_RA) / step_para);
 	}
 	fi = GetFreAtTime(fstart, faa, taa, tua, tra, taa + tua + tra);
-	MotorTimeTable[STEP_AA + STEP_UA + STEP_RA] = F2TIME_PARA / fi;
-	MotorStepTable[STEP_AA + STEP_UA + STEP_RA] = fi * (tra / STEP_RA) / step_para;
+	MotorTimeTable[STEP_AA + STEP_UA + STEP_RA] = (uint16_t)(F2TIME_PARA / fi);
+	MotorStepTable[STEP_AA + STEP_UA + STEP_RA] = (uint16_t)(fi * (tra / STEP_RA) / step_para);
 
 	for (i = STEP_AA + STEP_UA + STEP_RA + 1; i < 2 * (STEP_AA + STEP_UA + STEP_RA) + 1; i++)
 	{
@@ -400,23 +401,24 @@ void CalcMotorPeriStep_CPF(float fstart, float faa, uint16_t step_para, float ta
 void MotorRunParaInitial(void)
 {
 	/*FIXME:用户可以改变该参数实现S型曲线的升降特性*/
-	CalcMotorPeriStep_CPF(Pw_Motor1_FRE_START, Pw_Motor1_FRE_AA, Pw_Motor1_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor1TimeTable, Motor1StepTable);
-	CalcMotorPeriStep_CPF(Pw_Motor2_FRE_START, Pw_Motor2_FRE_AA, Pw_Motor2_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor2TimeTable, Motor2StepTable);
-	CalcMotorPeriStep_CPF(Pw_Motor3_FRE_START, Pw_Motor3_FRE_AA, Pw_Motor3_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor3TimeTable, Motor3StepTable);
-	CalcMotorPeriStep_CPF(Pw_Motor4_FRE_START, Pw_Motor4_FRE_AA, Pw_Motor4_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor4TimeTable, Motor4StepTable);
-	CalcMotorPeriStep_CPF(Pw_Motor5_FRE_START, Pw_Motor5_FRE_AA, Pw_Motor5_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor5TimeTable, Motor5StepTable);
-	CalcMotorPeriStep_CPF(Pw_Motor6_FRE_START, Pw_Motor6_FRE_AA, Pw_Motor6_STEP_PARA, M_T_AA, M_T_UA, M_T_RA, Motor6TimeTable, Motor6StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor1_StartSpeed * Pw_Motor1_PULSENUM / 60, Pw_Motor1_FRE_AA, Pw_Motor1_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor1TimeTable, Motor1StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor2_StartSpeed * Pw_Motor2_PULSENUM / 60, Pw_Motor2_FRE_AA, Pw_Motor2_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor2TimeTable, Motor2StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor3_StartSpeed * Pw_Motor3_PULSENUM / 60, Pw_Motor3_FRE_AA, Pw_Motor3_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor3TimeTable, Motor3StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor4_StartSpeed * Pw_Motor4_PULSENUM / 60, Pw_Motor4_FRE_AA, Pw_Motor4_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor4TimeTable, Motor4StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor5_StartSpeed * Pw_Motor5_PULSENUM / 60, Pw_Motor5_FRE_AA, Pw_Motor5_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor5TimeTable, Motor5StepTable);
+	CalcMotorPeriStep_CPF(Pw_Motor6_StartSpeed * Pw_Motor6_PULSENUM / 60, Pw_Motor6_FRE_AA, Pw_Motor6_ACCSpeed, M_T_AA, M_T_UA, M_T_RA, Motor6TimeTable, Motor6StepTable);
 }
 
 /**************************************************************************************
 两个电机同时运行时，花费时间较少的电机要根据时间长的电机调整运行参数
+用二分法，不断的反向推，逐渐逼近目标时间，最终达到与目标时间相近，相差一个比较小的值
 */
-void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned char dir, unsigned int Degree)
+void Find_BestTimeCost(u8 ID, unsigned long long time_cost, u8 dir, u32 Degree, u16 StartFre, u16 AccSpeed, float fre_AA)
 {
 	int id = ID;
-	float i = 0, j = 0;
-	float fi = M_FRE_START, fj = M_FRE_START;
-	int cal_ij = 1;
+	float i = 0, j = 0;					//i,j负责调整加加速度
+	float fi = StartFre, fj = StartFre; //fi,fj负责调整起始频率
+	int cal_ij = 1;						//=1，调整加加速度；=0，调整起始频率
 	unsigned int PulsesGiven = 0;
 	uint16_t *MotorTimeTable;
 	uint16_t *MotorStepTable;
@@ -437,22 +439,43 @@ void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned 
 		MotorTimeTable = Motor2TimeTable;
 		MotorStepTable = Motor2StepTable;
 		break;
+	case 3:
+		pmotor = &motor3;
+		MotorTimeTable = Motor3TimeTable;
+		MotorStepTable = Motor3StepTable;
+		break;
+	case 4:
+		pmotor = &motor4;
+		MotorTimeTable = Motor4TimeTable;
+		MotorStepTable = Motor4StepTable;
+		break;
+	case 5:
+		pmotor = &motor5;
+		MotorTimeTable = Motor5TimeTable;
+		MotorStepTable = Motor5StepTable;
+		break;
+	case 6:
+		pmotor = &motor6;
+		MotorTimeTable = Motor6TimeTable;
+		MotorStepTable = Motor6StepTable;
+		break;
 	}
 	if (pmotor == NULL)
 	{
 		return;
 	}
-	j = M_FRE_AA;
+
+	j = fre_AA; //初始的加加速度
 	i = 0;
 	while (1)
 	{
 		if (cal_ij)
 		{
-			CalcMotorPeriStep_CPF(M_FRE_START, (i + j) / 2.0, 100, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
+			CalcMotorPeriStep_CPF(StartFre, (i + j) / 2.0, AccSpeed, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
 		}
 		else
 		{
-			CalcMotorPeriStep_CPF((fi + fj) / 2, 0, 100, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
+			CalcMotorPeriStep_CPF((fi + fj) / 2, 0, AccSpeed, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
 		}
 		pmotor->en = 1;
 		pmotor->dir = dir;
@@ -487,13 +510,13 @@ void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned 
 				fj_o = fj;
 			}
 		}
-		if (time_cost_tmp >= time_cost - 32 * 4 && time_cost_tmp <= time_cost + 32 * 4)
+		if (time_cost_tmp >= time_cost - TIME_COST_DELTA && time_cost_tmp <= time_cost + TIME_COST_DELTA)
 		{
 			break;
 		}
 		if (cal_ij)
 		{
-			if (j < 0.1)
+			if (j < FRE_AA_MIN)
 			{
 				//说明即使是使用最基本的启动速度都无法同时停止，则修改为降低速度的梯形
 				i_o = 0;
@@ -506,7 +529,7 @@ void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned 
 		}
 		if (cal_ij)
 		{
-			if ((i > j && i - j < 0.02 || (i < j) && j - i < 0.02))
+			if ((i > j && i - j < FRE_AA_DELTA || (i < j) && j - i < FRE_AA_DELTA))
 			{
 				break;
 			}
@@ -521,7 +544,7 @@ void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned 
 		}
 		else
 		{
-			if ((fi > fj && fi - fj < 0.02 || (fi < fj) && fj - fi < 0.02))
+			if ((fi > fj && fi - fj < FRE_START_DELTA || (fi < fj) && fj - fi < FRE_START_DELTA))
 			{
 				break;
 			}
@@ -535,7 +558,7 @@ void Find_BestTimeCost(unsigned char ID, unsigned long long time_cost, unsigned 
 			}
 		}
 	}
-	CalcMotorPeriStep_CPF((fi_o + fj_o) / 2, (i_o + j_o) / 2.0, 100, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
+	CalcMotorPeriStep_CPF((fi_o + fj_o) / 2, (i_o + j_o) / 2.0, AccSpeed, M_T_AA, M_T_UA, M_T_RA, MotorTimeTable, MotorStepTable);
 }
 
 /**************************************************************************************
@@ -702,6 +725,131 @@ void Reposition_Motor(unsigned char MotorID, unsigned int NewPos, uint32_t MaxSp
 	}
 }
 /*同时启动电机12*/
+void Run_Motors_sync(u8 dir1, u32 Degree1, u16 StartSpeed1, u16 SetSpeed1, u16 AccSpeed1, u8 dir2, u32 Degree2, u16 StartSpeed2, u16 SetSpeed2, u16 AccSpeed2,
+					 u8 dir3, u32 Degree3, u16 StartSpeed3, u16 SetSpeed3, u16 AccSpeed3, u8 dir4, u32 Degree4, u16 StartSpeed4, u16 SetSpeed4, u16 AccSpeed4,
+					 u8 dir5, u32 Degree5, u16 StartSpeed5, u16 SetSpeed5, u16 AccSpeed5, u8 dir6, u32 Degree6, u16 StartSpeed6, u16 SetSpeed6, u16 AccSpeed6)
+{
+	float Motor1_FRE_AA, Motor2_FRE_AA, Motor3_FRE_AA, Motor4_FRE_AA, Motor5_FRE_AA, Motor6_FRE_AA;
+	u8 M1_Sync_F = 0, M2_Sync_F = 0, M3_Sync_F = 0, M4_Sync_F = 0, M5_Sync_F = 0, M6_Sync_F = 0;
+	unsigned long long time_cost_max = 0;
+	unsigned long long time_cost[6] = {0}, time_tmp[6] = {0};
+
+	//反推加加速度**************
+	if (Degree1 != 0 && SetSpeed1 != 0 && AccSpeed1 != 0)
+	{
+		M1_Sync_F = 1;
+		Motor1_FRE_AA = (SetSpeed1 - StartSpeed1) * Pw_Motor1_PULSENUM / MOTOR1_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed1 * Pw_Motor1_PULSENUM / 60, Motor1_FRE_AA, AccSpeed1, M_T_AA, M_T_UA, M_T_RA, Motor1TimeTable, Motor1StepTable);
+		Initial_Motor(1, dir1, MAX_POSITION);
+		Motor_Reinitial(1);
+	}
+	if (Degree2 != 0 && SetSpeed2 != 0 && AccSpeed2 != 0)
+	{
+		M2_Sync_F = 1;
+		Motor2_FRE_AA = (SetSpeed2 - StartSpeed2) * Pw_Motor2_PULSENUM / MOTOR2_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed2 * Pw_Motor2_PULSENUM / 60, Motor2_FRE_AA, AccSpeed2, M_T_AA, M_T_UA, M_T_RA, Motor2TimeTable, Motor2StepTable);
+		Initial_Motor(2, dir2, MAX_POSITION);
+		Motor_Reinitial(2);
+	}
+	if (Degree3 != 0 && SetSpeed3 != 0 && AccSpeed3 != 0)
+	{
+		M3_Sync_F = 1;
+		Motor3_FRE_AA = (SetSpeed3 - StartSpeed3) * Pw_Motor3_PULSENUM / MOTOR3_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed3 * Pw_Motor3_PULSENUM / 60, Motor3_FRE_AA, AccSpeed3, M_T_AA, M_T_UA, M_T_RA, Motor3TimeTable, Motor3StepTable);
+		Initial_Motor(3, dir3, MAX_POSITION);
+		Motor_Reinitial(3);
+	}
+	if (Degree4 != 0 && SetSpeed4 != 0 && AccSpeed4 != 0)
+	{
+		M4_Sync_F = 1;
+		Motor4_FRE_AA = (SetSpeed4 - StartSpeed4) * Pw_Motor4_PULSENUM / MOTOR4_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed4 * Pw_Motor4_PULSENUM / 60, Motor4_FRE_AA, AccSpeed4, M_T_AA, M_T_UA, M_T_RA, Motor4TimeTable, Motor4StepTable);
+		Initial_Motor(4, dir4, MAX_POSITION);
+		Motor_Reinitial(4);
+	}
+	if (Degree5 != 0 && SetSpeed5 != 0 && AccSpeed5 != 0)
+	{
+		M5_Sync_F = 1;
+		Motor5_FRE_AA = (SetSpeed5 - StartSpeed5) * Pw_Motor5_PULSENUM / MOTOR5_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed5 * Pw_Motor5_PULSENUM / 60, Motor5_FRE_AA, AccSpeed5, M_T_AA, M_T_UA, M_T_RA, Motor5TimeTable, Motor5StepTable);
+		Initial_Motor(5, dir5, MAX_POSITION);
+		Motor_Reinitial(5);
+	}
+	if (Degree6 != 0 && SetSpeed6 != 0 && AccSpeed6 != 0)
+	{
+		M6_Sync_F = 1;
+		Motor6_FRE_AA = (SetSpeed6 - StartSpeed6) * Pw_Motor6_PULSENUM / MOTOR6_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed6 * Pw_Motor6_PULSENUM / 60, Motor6_FRE_AA, AccSpeed6, M_T_AA, M_T_UA, M_T_RA, Motor6TimeTable, Motor6StepTable);
+		Initial_Motor(6, dir6, MAX_POSITION);
+		Motor_Reinitial(6);
+	}
+	if (M1_Sync_F + M2_Sync_F + M3_Sync_F + M4_Sync_F + M5_Sync_F + M6_Sync_F < 2)
+	{
+		return;
+	}
+
+	//***********求每台电机的运行时间******************
+	if (M1_Sync_F)
+		time_cost[0] = Get_TimeCost_ReverDot_S(1);
+
+	if (M2_Sync_F)
+		time_cost[1] = Get_TimeCost_ReverDot_S(2);
+
+	if (M3_Sync_F)
+		time_cost[2] = Get_TimeCost_ReverDot_S(3);
+
+	if (M4_Sync_F)
+		time_cost[3] = Get_TimeCost_ReverDot_S(4);
+
+	if (M5_Sync_F)
+		time_cost[4] = Get_TimeCost_ReverDot_S(5);
+
+	if (M6_Sync_F)
+		time_cost[5] = Get_TimeCost_ReverDot_S(6);
+
+	for (int i = 0; i < 6; i++)
+	{
+		time_tmp[i] = time_cost[i];
+	}
+	//********排序，得到最长运行时间******************
+	sort_long(time_tmp, 6);
+	time_cost_max = time_tmp[5];
+
+	//***********用二分法逐渐逼近，反推其他电机的运行曲线参数******************
+	//*使每台电机的运行时间基本相等（小于一个很小值）
+	if (M1_Sync_F && time_cost[0] != time_cost_max)
+		Find_BestTimeCost(1, time_cost_max, dir1, Degree1, StartSpeed1 * Pw_Motor1_PULSENUM / 60, Pw_Motor1_ACCSpeed, Motor1_FRE_AA);
+
+	if (M2_Sync_F && time_cost[1] != time_cost_max)
+		Find_BestTimeCost(2, time_cost_max, dir2, Degree2, StartSpeed2 * Pw_Motor2_PULSENUM / 60, Pw_Motor2_ACCSpeed, Motor2_FRE_AA);
+
+	if (M3_Sync_F && time_cost[2] != time_cost_max)
+		Find_BestTimeCost(3, time_cost_max, dir3, Degree3, StartSpeed3 * Pw_Motor3_PULSENUM / 60, Pw_Motor3_ACCSpeed, Motor3_FRE_AA);
+
+	if (M4_Sync_F && time_cost[3] != time_cost_max)
+		Find_BestTimeCost(4, time_cost_max, dir4, Degree4, StartSpeed4 * Pw_Motor4_PULSENUM / 60, Pw_Motor4_ACCSpeed, Motor4_FRE_AA);
+
+	if (M5_Sync_F && time_cost[4] != time_cost_max)
+		Find_BestTimeCost(5, time_cost_max, dir5, Degree5, StartSpeed5 * Pw_Motor5_PULSENUM / 60, Pw_Motor5_ACCSpeed, Motor5_FRE_AA);
+
+	if (M6_Sync_F && time_cost[5] != time_cost_max)
+		Find_BestTimeCost(6, time_cost_max, dir6, Degree6, StartSpeed6 * Pw_Motor6_PULSENUM / 60, Pw_Motor6_ACCSpeed, Motor6_FRE_AA);
+
+	//***********开始运行******************
+	if (M1_Sync_F)
+		Start_Motor_S(1, dir1, Degree1);
+	if (M2_Sync_F)
+		Start_Motor_S(2, dir2, Degree2);
+	if (M3_Sync_F)
+		Start_Motor_S(3, dir3, Degree3);
+	if (M4_Sync_F)
+		Start_Motor_S(4, dir4, Degree4);
+	if (M5_Sync_F)
+		Start_Motor_S(5, dir5, Degree5);
+	if (M6_Sync_F)
+		Start_Motor_S(6, dir6, Degree6);
+}
+
 void Start_Motor12(unsigned char dir1, unsigned int Degree1, unsigned char dir2, unsigned int Degree2)
 {
 
@@ -711,9 +859,9 @@ void Start_Motor12(unsigned char dir1, unsigned int Degree1, unsigned char dir2,
 	{
 		return;
 	}
-	MotorRunParaInitial();
-	Motor_Reinitial(1);
-	Motor_Reinitial(2);
+	// MotorRunParaInitial();
+	// Motor_Reinitial(1);
+	// Motor_Reinitial(2);
 	if (Degree1 <= Degree2)
 	{
 		motor2.en = 1;
@@ -724,7 +872,7 @@ void Start_Motor12(unsigned char dir1, unsigned int Degree1, unsigned char dir2,
 		motor2.Time_Cost_Act = 0;
 		motor2.PulsesGiven = PulsesGiven * motor2.divnum;
 		time_cost = Get_TimeCost_ReverDot_S(2);
-		Find_BestTimeCost(1, time_cost, dir1, Degree1);
+		// Find_BestTimeCost(1, time_cost, dir1, Degree1);
 	}
 	else
 	{
@@ -736,7 +884,7 @@ void Start_Motor12(unsigned char dir1, unsigned int Degree1, unsigned char dir2,
 		motor1.Time_Cost_Act = 0;
 		motor1.PulsesGiven = PulsesGiven * motor1.divnum;
 		time_cost = Get_TimeCost_ReverDot_S(1);
-		Find_BestTimeCost(2, time_cost, dir2, Degree2);
+		// Find_BestTimeCost(2, time_cost, dir2, Degree2);
 	}
 
 	// Start_Motor_S(1, dir1, Degree1);
@@ -747,7 +895,7 @@ void Start_Motor12(unsigned char dir1, unsigned int Degree1, unsigned char dir2,
 void SetSpeed(unsigned char MotorID, signed char speedindex)
 {
 	int currentindex, i;
-	unsigned int destspeed;
+	// unsigned int destspeed;
 	unsigned int stepstostop = 0;
 	MOTOR_CONTROL_S *pmotor_s = NULL;
 	switch (MotorID)
@@ -871,7 +1019,7 @@ void SetSpeed(unsigned char MotorID, signed char speedindex)
 }
 
 /*设置电机的位置，电机运行到指定的位置*/
-void SetPosition(unsigned char MotorID, unsigned int dest, uint32_t MaxSpeed_SPTA, uint32_t AccSpeed_SPTA)
+void SetPosition(unsigned char MotorID, unsigned int dest)
 {
 	MOTOR_CONTROL_S *pmotor_s = NULL;
 	switch (MotorID)
@@ -1369,47 +1517,65 @@ void Initial_PWM_Motor6(void)
 }
 
 //启动电机运行
-void Run_Motor_S(unsigned char MotorID, unsigned char dir, uint32_t Degree, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para)
+void Run_Motor_S(unsigned char MotorID, unsigned char dir, uint32_t Degree, uint32_t StartSpeed, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para)
 {
+	float motor_fre_aa;
 	switch (MotorID)
 	{
 	case 1:
-		Pw_Motor1_FRE_AA = (MaxSpeed_S * Pw_Motor1_PULSENUM / 60 - Pw_Motor1_FRE_START) / (Motor1_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor1_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor1_FRE_START, Pw_Motor1_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor1TimeTable, Motor1StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor1_PULSENUM / MOTOR1_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor1_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor1TimeTable, Motor1StepTable);
 		Initial_Motor(1, M1DIV, MAX_POSITION);
 		Start_Motor_S(1, M1_CLOCKWISE, Degree);
 		break;
 	case 2:
-		Pw_Motor2_FRE_AA = (MaxSpeed_S * Pw_Motor2_PULSENUM / 60 - Pw_Motor2_FRE_START) / (Motor2_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor2_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor2_FRE_START, Pw_Motor2_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor2TimeTable, Motor2StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor2_PULSENUM / MOTOR2_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor2_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor2TimeTable, Motor2StepTable);
 		Initial_Motor(2, M2DIV, MAX_POSITION);
 		Start_Motor_S(2, M2_CLOCKWISE, Degree);
 		break;
 	case 3:
-		Pw_Motor3_FRE_AA = (MaxSpeed_S * Pw_Motor3_PULSENUM / 60 - Pw_Motor3_FRE_START) / (Motor3_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor3_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor3_FRE_START, Pw_Motor3_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor3TimeTable, Motor3StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor3_PULSENUM / MOTOR3_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor3_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor3TimeTable, Motor3StepTable);
 		Initial_Motor(3, M3DIV, MAX_POSITION);
 		Start_Motor_S(3, M3_CLOCKWISE, Degree);
 		break;
 	case 4:
-		Pw_Motor4_FRE_AA = (MaxSpeed_S * Pw_Motor4_PULSENUM / 60 - Pw_Motor4_FRE_START) / (Motor4_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor4_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor4_FRE_START, Pw_Motor4_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor4TimeTable, Motor4StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor4_PULSENUM / MOTOR4_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor4_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor4TimeTable, Motor4StepTable);
 		Initial_Motor(4, M4DIV, MAX_POSITION);
 		Start_Motor_S(4, M4_CLOCKWISE, Degree);
 		break;
 	case 5:
-		Pw_Motor5_FRE_AA = (MaxSpeed_S * Pw_Motor5_PULSENUM / 60 - Pw_Motor5_FRE_START) / (Motor5_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor5_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor5_FRE_START, Pw_Motor5_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor5TimeTable, Motor5StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor5_PULSENUM / MOTOR5_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor5_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor5TimeTable, Motor5StepTable);
 		Initial_Motor(5, M5DIV, MAX_POSITION);
 		Start_Motor_S(5, M5_CLOCKWISE, Degree);
 		break;
 	case 6:
-		Pw_Motor6_FRE_AA = (MaxSpeed_S * Pw_Motor6_PULSENUM / 60 - Pw_Motor6_FRE_START) / (Motor6_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor6_XiShu_1 * M_T_AA * M_T_RA);
-		CalcMotorPeriStep_CPF(Pw_Motor6_FRE_START, Pw_Motor6_FRE_AA, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor6TimeTable, Motor6StepTable);
+		motor_fre_aa = (MaxSpeed_S - StartSpeed) * Pw_Motor6_PULSENUM / MOTOR6_AA_VALUE;
+		CalcMotorPeriStep_CPF(StartSpeed * Pw_Motor6_PULSENUM / 60, motor_fre_aa, AccSpeed_Para, M_T_AA, M_T_UA, M_T_RA, Motor6TimeTable, Motor6StepTable);
 		Initial_Motor(6, M6DIV, MAX_POSITION);
 		Start_Motor_S(6, M6_CLOCKWISE, Degree);
 		break;
 	default:
 		return;
 	}
+}
+
+void sort_long(unsigned long long *a, int l) //a为数组地址，l为数组长度。
+{
+	int i, j;
+	unsigned long long v;
+	//排序主体
+	for (i = 0; i < l - 1; i++)
+		for (j = i + 1; j < l; j++)
+		{
+			if (a[i] > a[j]) //如前面的比后面的大，则交换。
+			{
+				v = a[i];
+				a[i] = a[j];
+				a[j] = v;
+			}
+		}
 }

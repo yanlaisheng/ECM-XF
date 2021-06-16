@@ -17,5 +17,6 @@ void BurstWrite1302Ram(u8 *p);
 void Read1302Time(u8 *time);
 void TestDS1302(void);
 void Write1302ByteTime(u8 add, u8 data); //Byte
+// void BurstRead1302Clock(u8 *p);
 
 #endif

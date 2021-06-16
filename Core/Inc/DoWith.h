@@ -17,6 +17,7 @@
 #include "typedef.h"
 
 /* Exported types ------------------------------------------------------------*/
+
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
@@ -34,14 +35,21 @@ void Manual_Control(void); //手动控制启停
 
 void ParArrayWrite(uint16_t *p_Top, uint16_t *p_Base, uint16_t w_WriteSize);
 void ParArrayRead(uint16_t *p_Top, uc16 *p_Base, uint16_t w_ReadSize);
-void Boot_ParLst(void);    // 初始化设定参数
-void SavePar_Prompt(void); // 保存参数+状态提示
-void ForceSavePar(void);   // 强制保存参数
+void Boot_ParLst(void);       // 初始化设定参数
+void SavePar_Prompt(void);    // 保存参数+状态提示
+void ForceTime_SavePar(void); // 强制保存参数
 
-void Time_Output(void);       // 软件时钟输出	 2008.10.21
-void EquipStatus(void);       // 设备状态
-void ReadWriteRealTime(void); // 读写实时时钟 ISL12087
-void KglStatus(void);         // 开关量状态
+void Time_Output(void); // 软件时钟输出	 2008.10.21
+void EquipStatus(void); // 设备状态
+void KglStatus(void);   // 开关量状态
+
+void SPI_FMRAM_BufferRead(u8 *pBuffer, u16 ReadAddr, u16 NumByteToRead);
+void SPI_FMRAM_BufferWrite(u8 *pBuffer, u16 WriteAddr, u16 NumByteToWrite);
+void W25qxx_ReadBytes(uint8_t *pBuffer, uint32_t ReadAddr, uint32_t NumByteToRead);
+void W25QXX_Write_WithErase(u8 *pBuffer, u32 WriteAddr, u16 NumByteToWrite);
+void read_show_Fram(u16 start_addr, u16 dataLen);
+void read_show_exFLASH(u16 start_addr, u16 dataLen);
+void PosCMD_SaveTo_FLASH(void);
 
 #endif /* __DOWITH_H */
 

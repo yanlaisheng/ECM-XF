@@ -22,7 +22,9 @@
 			"com6_232.h": "c",
 			"wk_port1.h": "c",
 			"stmflash.h": "c",
-			"gpio.h": "c"
+			"gpio.h": "c",
+			"stm32f4xx.h": "c",
+			"dowith.h": "c"
 		}
 	}
 }

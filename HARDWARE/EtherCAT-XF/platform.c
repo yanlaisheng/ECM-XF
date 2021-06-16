@@ -20,10 +20,11 @@ extern SPI_HandleTypeDef hspi3;
 
 int ECMSPIReadWrite(uint8_t *rdata, uint8_t *wdata, int rwlength)
 {
+	//	//如果BUSY引脚是高电平，则一直等待
+	//	// while (HAL_GPIO_ReadPin(BUSY_GPIO_Port, BUSY_Pin))
+	//	;
 	SPI_ECAT_CS_ON;
-	//    HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi3, wdata, rdata, rwlength, HAL_MAX_DELAY);
-	//    HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET);
 	SPI_ECAT_CS_OFF;
 	return 0;
 }

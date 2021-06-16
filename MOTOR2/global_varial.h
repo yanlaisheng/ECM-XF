@@ -2,29 +2,20 @@
 #ifndef __GLOBAL_VARIAL_H
 #define __GLOBAL_VARIAL_H
 
-/*以下包含必要的头文件，包括数据格式文件*/
 /****************Start*******************/
-//#include "STM32F10x_System.h"
-//#include "stm32f10x_type.h"
-//#include "stm32f10x.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f407xx.h"
 #include "stdint.h"
 #include "stdlib.h"
 #include "math.h"
 #include "Macro.h"
+#include "typedef.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdarg.h>
-//
-//
-//#include  "stm32f10x_conf.h"
-//#include  <stm32f10x.h>
-
-//#include  <stm32f10x_lib.h>
 //
 
 #define MIN(a, b) (a < b) ? (a) : (b)
@@ -141,5 +132,9 @@ void Initial_PWM_Motor5(void);
 void Initial_PWM_Motor6(void);
 void EXTI_Configuration(void);
 void CalcMotorPeriStep_CPF(float fstart, float faa, uint16_t step_para, float taa, float tua, float tra, uint16_t MotorTimeTable[], uint16_t MotorStepTable[]);
-void Run_Motor_S(unsigned char MotorID, unsigned char dir, uint32_t Degree, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para);
+void Run_Motor_S(unsigned char MotorID, unsigned char dir, uint32_t Degree, uint32_t StartSpeed, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para);
+void sort_long(unsigned long long *a, int l);
+void Run_Motors_sync(u8 dir1, u32 Degree1, u16 StartSpeed1, u16 SetSpeed1, u16 AccSpeed1, u8 dir2, u32 Degree2, u16 StartSpeed2, u16 SetSpeed2, u16 AccSpeed2,
+					 u8 dir3, u32 Degree3, u16 StartSpeed3, u16 SetSpeed3, u16 AccSpeed3, u8 dir4, u32 Degree4, u16 StartSpeed4, u16 SetSpeed4, u16 AccSpeed4,
+					 u8 dir5, u32 Degree5, u16 StartSpeed5, u16 SetSpeed5, u16 AccSpeed5, u8 dir6, u32 Degree6, u16 StartSpeed6, u16 SetSpeed6, u16 AccSpeed6);
 #endif
