@@ -59,8 +59,10 @@ uint32_t Reset_time_Max;  //复位运行时间
 // 以下为用外部字节定义的开关量输入，开关量输出部分
 // 硬件定义
 //1  开关量输入 使用
-uint8_t K_ManuAuto; // 手动.自动
-uint8_t K_StopRun;  // 启动停止
+uint8_t K_ManuAuto;    // 手动.自动
+uint8_t K_StopRun;     // 启动停止
+uint8_t K_StartPoint;  // 原点开关
+uint8_t K_SecondPonit; // 第二点开关
 
 //4  位标志部分 5个字节
 // 停机状态标志

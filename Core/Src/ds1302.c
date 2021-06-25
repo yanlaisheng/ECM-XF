@@ -111,10 +111,11 @@ void DelayNOP(u32 count)
 		// IWDG_Feed();
 		// IWDG_Feed();
 		//IAR ”√
-		asm("NOP");
+//		asm("NOP");
+			//MDK ”√
+	NOP();
 	}
-	//MDK ”√
-	//NOP();
+
 }
 
 void DS1302SendByte(u8 byte)

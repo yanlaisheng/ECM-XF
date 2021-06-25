@@ -8,6 +8,7 @@
 //	return *(vu16*)faddr;
 //}
 
+//按双字读，即读4个字节
 u32 STMFLASH_ReadWord(u32 faddr)
 {
 	return *(vu32 *)faddr;
@@ -101,7 +102,7 @@ u32 STMFLASH_ReadWord(u32 faddr)
 //从指定地址开始读出指定长度的数据
 //ReadAddr:起始地址
 //pBuffer:数据指针
-//NumToWrite:半字(16位)数
+//NumToWrite:双字(32位)数
 void STMFLASH_Read(u32 ReadAddr, u32 *pBuffer, u16 NumToRead)
 {
 	u16 i;
@@ -134,7 +135,8 @@ void MEM_If_DeInit_FS(void)
 	HAL_FLASH_Lock();
 }
 
-uint16_t MEM_If_Erase_FS(uint32_t start_Add, uint32_t end_Add)
+//只删除start_Add所在的当前扇区
+uint16_t MEM_If_Erase_FS(uint32_t start_Add)
 {
 	/* USER CODE BEGIN 3 */
 	uint32_t UserStartSector;
@@ -149,17 +151,16 @@ uint16_t MEM_If_Erase_FS(uint32_t start_Add, uint32_t end_Add)
 
 	pEraseInit.TypeErase = TYPEERASE_SECTORS;
 	pEraseInit.Sector = UserStartSector;
-	pEraseInit.NbSectors = GetSector(end_Add) - UserStartSector + 1;
+	pEraseInit.NbSectors = 1;
 	pEraseInit.VoltageRange = VOLTAGE_RANGE_3;
 
 	if (HAL_FLASHEx_Erase(&pEraseInit, &SectorError) != HAL_OK)
 	{
 		/* Error occurred while page erase */
-		return (1);
+		return (HAL_ERROR); // Return 1
 	}
+	return (HAL_OK); //Return 0
 
-	// return (USBD_OK);
-	return (HAL_OK);
 	/* USER CODE END 3 */
 }
 

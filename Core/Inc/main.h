@@ -24,21 +24,20 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-  /* Private includes ----------------------------------------------------------*/
-  /* USER CODE BEGIN Includes */
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "GlobalConst.h"
 #include "typedef.h"
-  /* USER CODE END Includes */
+/* USER CODE END Includes */
 
-  /* Exported types ------------------------------------------------------------*/
-  /* USER CODE BEGIN ET */
+/* Exported types ------------------------------------------------------------*/
+/* USER CODE BEGIN ET */
   extern uint8_t WkPort1_RcvBuffer[RCV1_MAX]; // 接收缓冲区
   extern uint8_t WkPort2_RcvBuffer[RCV1_MAX]; // 接收缓冲区
   extern uint8_t WkPort3_RcvBuffer[RCV1_MAX]; // 接收缓冲区
@@ -78,8 +77,6 @@ extern "C"
   void Adj_Pos(u8 driver_no, s32 PosErr_Muti, s32 PosErr_Sing);
   //发送位置数据
   void Send_Pos_Data(void);
-  //校验位置命令是否正确
-  void Verify_Pos_CMD(void);
   void Limit_Max_Pos(void); //限制最大最小位置范围
   //判断某台电机是否超出位置范围
   u8 Judge_OverPos(u8 Driver_No);
@@ -109,12 +106,12 @@ extern "C"
 #define SPI_ECAT_CS_ON HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_RESET) //SPI使能
 #define SPI_ECAT_CS_OFF HAL_GPIO_WritePin(SPI3_CS_GPIO_Port, SPI3_CS_Pin, GPIO_PIN_SET)  //SPI禁止使能
 
-  /* USER CODE END EM */
+/* USER CODE END EM */
 
-  /* Exported functions prototypes ---------------------------------------------*/
-  void Error_Handler(void);
+/* Exported functions prototypes ---------------------------------------------*/
+void Error_Handler(void);
 
-  /* USER CODE BEGIN EFP */
+/* USER CODE BEGIN EFP */
   void SystemClock_Config(void);
   void Com1_RcvProcess(void);
   void Com1_SlaveSend(void);
@@ -286,11 +283,11 @@ extern "C"
 #define DO6_GPIO_Port GPIOE
 #define DO5_Pin GPIO_PIN_1
 #define DO5_GPIO_Port GPIOE
-  /* USER CODE BEGIN Private defines */
+/* USER CODE BEGIN Private defines */
 
   int userGetchar(void);
 
-  /* USER CODE END Private defines */
+/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }

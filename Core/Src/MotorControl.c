@@ -8,6 +8,7 @@
 #include "main.h"
 #include <math.h>
 #include <stdlib.h>
+#include "global_varial.h"
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -83,8 +84,6 @@ void Pos_Manual_Adj(void);
 void Adj_Pos(u8 driver_no, s32 PosErr_Muti, s32 PosErr_Sing);
 //发送位置数据
 void Send_Pos_Data(void);
-//校验位置命令是否正确
-void Verify_Pos_CMD(void);
 void Limit_Max_Pos(void); //限制最大最小位置范围
 //判断某台电机是否超出位置范围
 u8 Judge_OverPos(u8 Driver_No);
@@ -171,7 +170,7 @@ void Driver_Control(void) // 电机控制
 				{
 					if (Pr_RUN_Count_Set == 0 || (Pr_RUN_Count_Set > 0 && Pr_RUN_Count < Pr_RUN_Count_Set))
 					{
-						Send_Pos_Data();						  //只发送位置数据
+						// Send_Pos_Data();						  //只发送位置数据
 						F_Sync_6_axis = 1;						  //置6轴同步运行标志
 						Normal_Run();							  //根据条件发送启动命令
 						Pw_EquipStatus = Pw_EquipStatus & 0xFFF8; //清3个状态位
@@ -351,6 +350,7 @@ void Driver_Control(void) // 电机控制
 			CLOSE_HAND;
 			if (Pw_Step_Pos_CMD != 0 && Pw_Running_Pos_CMD >= 1 && Pw_Running_Pos_CMD <= (COM_CMD_NUM - 1) && Pr_F_AllStopped == 1)
 			{
+				HAL_Delay(100);
 				tmp_arr_p1 = &w_ParLst_Pos_CMD;
 				Run_to_One_Pos(tmp_arr_p1[(Pw_Running_Pos_CMD - 1) * POS_CMD_SIZE + 1]); //用手动方式同步运行到某一点
 				Pw_Step_Pos_CMD = 0;
@@ -360,14 +360,20 @@ void Driver_Control(void) // 电机控制
 				//1#手动，正转
 				if (Pw_Driver1_Enable == 1 && Pw_Driver1_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo1, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Driver1_Speed, Pw_Driver1_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo1, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Driver1_Speed, Pw_Driver1_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo1, M1_CLOCKWISE, (Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse, Pw_Motor1_StartSpeed, Pw_Driver1_Speed, Pw_Driver1_AccTime);
+
 					Pw_Driver1_Enable = 0;
 					Driver1_Pos_Start_Sort = 1; //=1，表示已经写入到命令缓冲区
 					Pr_Send_Data_F &= 0xFE;
 				}
 				else if (Pw_Driver1_Enable == 0 && Pw_Driver1_R_Enable == 1) //1#手动，反转
 				{
-					Locate_Rle_1(Pw_EquipmentNo1, -((Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse), Pw_Driver1_Speed, Pw_Driver1_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo1, -((Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse), Pw_Driver1_Speed, Pw_Driver1_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo1, M1_UNCLOCKWISE, -((Pw_Driver1_Pluse_HW << 16) + Pw_Driver1_Pluse), Pw_Motor1_StartSpeed, Pw_Driver1_Speed, Pw_Driver1_AccTime);
+
 					Pw_Driver1_R_Enable = 0;
 					Driver1_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xFE;
@@ -376,14 +382,18 @@ void Driver_Control(void) // 电机控制
 				//2#
 				if (Pw_Driver2_Enable == 1 && Pw_Driver2_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo2, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Driver2_Speed, Pw_Driver2_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo2, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Driver2_Speed, Pw_Driver2_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo2, M2_CLOCKWISE, (Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse, Pw_Motor2_StartSpeed, Pw_Driver2_Speed, Pw_Driver2_AccTime);
 					Pw_Driver2_Enable = 0;
 					Driver2_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xFD;
 				}
 				else if (Pw_Driver2_Enable == 0 && Pw_Driver2_R_Enable == 1)
 				{
-					Locate_Rle_1(Pw_EquipmentNo2, -((Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse), Pw_Driver2_Speed, Pw_Driver2_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo2, -((Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse), Pw_Driver2_Speed, Pw_Driver2_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo2, M2_UNCLOCKWISE, -((Pw_Driver2_Pluse_HW << 16) + Pw_Driver2_Pluse), Pw_Motor2_StartSpeed, Pw_Driver2_Speed, Pw_Driver2_AccTime);
 					Pw_Driver2_R_Enable = 0;
 					Driver2_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xFD;
@@ -392,14 +402,18 @@ void Driver_Control(void) // 电机控制
 				//3#
 				if (Pw_Driver3_Enable == 1 && Pw_Driver3_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo3, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Driver3_Speed, Pw_Driver3_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo3, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Driver3_Speed, Pw_Driver3_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo3, M3_CLOCKWISE, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Motor3_StartSpeed, Pw_Driver3_Speed, Pw_Driver3_AccTime);
 					Pw_Driver3_Enable = 0;
 					Driver3_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xFB;
 				}
 				else if (Pw_Driver3_Enable == 0 && Pw_Driver3_R_Enable == 1)
 				{
-					Locate_Rle_1(Pw_EquipmentNo3, -((Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse), Pw_Driver3_Speed, Pw_Driver3_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo3, -((Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse), Pw_Driver3_Speed, Pw_Driver3_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo3, M3_UNCLOCKWISE, (Pw_Driver3_Pluse_HW << 16) + Pw_Driver3_Pluse, Pw_Motor3_StartSpeed, Pw_Driver3_Speed, Pw_Driver3_AccTime);
 					Pw_Driver3_R_Enable = 0;
 					Driver3_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xFB;
@@ -408,14 +422,18 @@ void Driver_Control(void) // 电机控制
 				//4#
 				if (Pw_Driver4_Enable == 1 && Pw_Driver4_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo4, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo4, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo4, M4_CLOCKWISE, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Motor4_StartSpeed, Pw_Driver4_Speed, Pw_Driver4_AccTime);
 					Pw_Driver4_Enable = 0;
 					Driver4_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xF7;
 				}
 				else if (Pw_Driver4_Enable == 0 && Pw_Driver4_R_Enable == 1)
 				{
-					Locate_Rle_1(Pw_EquipmentNo4, -((Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse), Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo4, -((Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse), Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo4, M4_UNCLOCKWISE, (Pw_Driver4_Pluse_HW << 16) + Pw_Driver4_Pluse, Pw_Motor4_StartSpeed, Pw_Driver4_Speed, Pw_Driver4_AccTime);
 					Pw_Driver4_R_Enable = 0;
 					Driver4_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xF7;
@@ -424,14 +442,18 @@ void Driver_Control(void) // 电机控制
 				//5#
 				if (Pw_Driver5_Enable == 1 && Pw_Driver5_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo5, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Driver5_Speed, Pw_Driver5_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo5, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Driver5_Speed, Pw_Driver5_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo5, M5_CLOCKWISE, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Motor5_StartSpeed, Pw_Driver5_Speed, Pw_Driver5_AccTime);
 					Pw_Driver5_Enable = 0;
 					Driver5_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xEF;
 				}
 				else if (Pw_Driver5_Enable == 0 && Pw_Driver5_R_Enable == 1)
 				{
-					Locate_Rle_1(Pw_EquipmentNo5, -((Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse), Pw_Driver5_Speed, Pw_Driver5_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo5, -((Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse), Pw_Driver5_Speed, Pw_Driver5_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo5, M5_UNCLOCKWISE, (Pw_Driver5_Pluse_HW << 16) + Pw_Driver5_Pluse, Pw_Motor5_StartSpeed, Pw_Driver5_Speed, Pw_Driver5_AccTime);
 					Pw_Driver5_R_Enable = 0;
 					Driver5_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xEF;
@@ -440,14 +462,18 @@ void Driver_Control(void) // 电机控制
 				//6#
 				if (Pw_Driver6_Enable == 1 && Pw_Driver6_R_Enable == 0)
 				{
-					Locate_Rle_1(Pw_EquipmentNo6, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Driver6_Speed, Pw_Driver6_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo6, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Driver6_Speed, Pw_Driver6_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo6, M6_CLOCKWISE, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Motor6_StartSpeed, Pw_Driver6_Speed, Pw_Driver6_AccTime);
 					Pw_Driver6_Enable = 0;
 					Driver6_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xDF;
 				}
 				else if (Pw_Driver6_Enable == 0 && Pw_Driver6_R_Enable == 1)
 				{
-					Locate_Rle_1(Pw_EquipmentNo6, -((Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse), Pw_Driver6_Speed, Pw_Driver6_AccTime, 0);
+					HAL_Delay(100);
+					// Locate_Rle_1(Pw_EquipmentNo6, -((Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse), Pw_Driver6_Speed, Pw_Driver6_AccTime, 0);
+					Run_Motor_S(Pw_EquipmentNo6, M6_UNCLOCKWISE, (Pw_Driver6_Pluse_HW << 16) + Pw_Driver6_Pluse, Pw_Motor6_StartSpeed, Pw_Driver6_Speed, Pw_Driver6_AccTime);
 					Pw_Driver6_R_Enable = 0;
 					Driver6_Pos_Start_Sort = 1;
 					Pr_Send_Data_F &= 0xDF;
@@ -507,67 +533,6 @@ void Send_Pos_Data(void)
 	}
 }
 
-//校验位置命令是否正确
-void Verify_Pos_CMD(void)
-{
-	if (Pw_TouchRunStop == 0 && F_Sync_6_axis == 1)
-	{
-		//加上屏蔽字，进行判断
-		if ((((Pw_ComWriteErr_Stop & 0x01) == 0x01) & F_Driver1_Cmd_Con_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x02) == 0x02) & F_Driver2_Cmd_Con_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x04) == 0x04) & F_Driver3_Cmd_Con_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x08) == 0x08) & F_Driver4_Cmd_Con_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x10) == 0x10) & F_Driver5_Cmd_Con_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x20) == 0x20) & F_Driver6_Cmd_Con_Err))
-			F_HaveDriver_Cmd_Con_Err = 1;
-		else
-			F_HaveDriver_Cmd_Con_Err = 0;
-
-		//判断是否都写入成功
-		//Pw_ComWriteErr_Stop的低6位作为屏蔽位，对应位=0，屏蔽（不管是否写OK，都运行）；对应位=1，不屏蔽（仍然按原状态执行）
-		if (((((Pw_ComWriteErr_Stop & 0x01) == 0x01) & !Pr_Driver1_Cmd_OK_F)) ||
-			((((Pw_ComWriteErr_Stop & 0x02) == 0x02) & !Pr_Driver2_Cmd_OK_F)) ||
-			((((Pw_ComWriteErr_Stop & 0x04) == 0x04) & !Pr_Driver3_Cmd_OK_F)) ||
-			((((Pw_ComWriteErr_Stop & 0x08) == 0x08) & !Pr_Driver4_Cmd_OK_F)) ||
-			((((Pw_ComWriteErr_Stop & 0x10) == 0x10) & !Pr_Driver5_Cmd_OK_F)) ||
-			((((Pw_ComWriteErr_Stop & 0x20) == 0x20) & !Pr_Driver6_Cmd_OK_F)))
-			Pr_AllDriver_Cmd_OK_F = 0;
-		else
-			Pr_AllDriver_Cmd_OK_F = 1;
-
-		//判断是否有写入错误
-		if ((((Pw_ComWriteErr_Stop & 0x01) == 0x01) & F_Driver1_Cmd_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x02) == 0x02) & F_Driver2_Cmd_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x04) == 0x04) & F_Driver3_Cmd_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x08) == 0x08) & F_Driver4_Cmd_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x10) == 0x10) & F_Driver5_Cmd_Err) ||
-			(((Pw_ComWriteErr_Stop & 0x20) == 0x20) & F_Driver6_Cmd_Err))
-			//		if(F_Driver4_Cmd_Err)
-			F_HaveDriver_Cmd_Err = 1;
-		else
-			F_HaveDriver_Cmd_Err = 0;
-
-		//如果写入错误，或者超时，则停机，置标志位
-		if ((Pw_ComWriteErr_Stop != 0) & (F_HaveDriver_Cmd_Err || F_HaveDriver_Cmd_Con_Err))
-		{
-			Pr_HaveDriver_Cmd_Err_F = 1;
-
-			Clear_Cmd_Queue();	 //清命令缓冲区
-								 //			Pw_StepAutoMode=1;				//手动模式
-			Pw_TouchRunStop = 1; //停止模式
-			F_SendStopCMD2 = 0;
-			Pr_BRAKE_Control = 1;					  //有故障，刹车
-			START_BRAKE_SYSTEM;						  //刹车
-			Pw_EquipStatus = Pw_EquipStatus | 0x0200; //=512，位置写入错误停机
-		}
-		else
-		{
-			Pr_HaveDriver_Cmd_Err_F = 0;
-			Pw_EquipStatus = Pw_EquipStatus & 0xFDFF; //清位置写入错误停机标志位
-		}
-	}
-}
-
 //有条件复位电机到初始位置
 void Reset_Drivers(void)
 {
@@ -585,13 +550,12 @@ void Reset_Drivers(void)
 void Reset_Routine(void)
 {
 	float num1, num2, num3, num4, num5, num6;
-	float tmp1_f;
+	float tmp_num3, tmp_num4, tmp_num5, tmp_num6;
 	s16 temp_MUTI3, temp_MUTI4, temp_MUTI5, temp_MUTI6;
-	float temp_SINGLE1, temp_SINGLE2, temp_SINGLE3, temp_SINGLE4, temp_SINGLE5, temp_SINGLE6;
-	s32 temp_pulse1, temp_pulse2, temp_pulse3, temp_pulse4, temp_pulse5, temp_pulse6;
-	float Reset_time_float[6];
-	float tmp_time;
-	s32 Reset_time_I[6];
+	signed long long temp_SINGLE1, temp_SINGLE2, temp_SINGLE3, temp_SINGLE4, temp_SINGLE5, temp_SINGLE6;
+	u8 dir1, dir2, dir3, dir4, dir5, dir6;
+	s32 pulse_num1, pulse_num2, pulse_num3, pulse_num4, pulse_num5, pulse_num6;
+	u32 pulse_num1_P, pulse_num2_P, pulse_num3_P, pulse_num4_P, pulse_num5_P, pulse_num6_P;
 
 	Pr_BRAKE_Control = 0; //开刹车
 	STOP_BRAKE_SYSTEM;	  //允许运行
@@ -605,215 +569,228 @@ void Reset_Routine(void)
 	Pr_Driver_Running_No = 0;  //当前运行指令号=0
 	Pr_Driver_Previous_No = 0; //前一个执行指令号
 
+#if (POS_TYPE == 0) //=0表示位置数据类型为编码器数据
 	//计算1#脉冲
 	//		temp_MUTI=Pr_Drive1_MultiData_Init-Pr_Drive1_MultiData;
 	temp_SINGLE1 = ((Pr_Drive1_singleData_Init_HW << 16) + Pr_Drive1_singleData_Init) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData);
 	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
-	//		num=temp_SINGLE*PULSE_NUM/ELEC_GEAR_US200;
 	num1 = (float)temp_SINGLE1;
-	num1 = (float)num1 * PULSE_NUM;
-	num1 = (float)num1 / ELEC_GEAR_US200;
+	num1 *= PULSE_NUM;
+	num1 /= ELEC_GEAR_US200;
 
 	if (num1 > 0.0f)
-		temp_pulse1 = (s32)(num1 + 0.5f);
+		pulse_num1 = (s32)(num1 + 0.5f);
 	else
-		temp_pulse1 = (s32)(num1 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo1, temp_pulse1, Pw_Driver1_Speed, Pw_Driver1_AccTime, 0);
-	//		Fill_Pos_Data(Pw_EquipmentNo1,temp_pulse1,Pw_Driver1_Speed,Pw_Driver1_AccTime,0);
-	Driver1_Pos_Start_Sort = 1;
-
-	//计算1#运行时间
-	Reset_time_float[0] = abs(temp_pulse1);
-	Reset_time_float[0] = (float)Reset_time_float[0] * 60000;
-	Reset_time_float[0] = (float)Reset_time_float[0] / (PULSE_NUM * Pw_Driver1_Speed);
-	tmp_time = (float)Pw_Driver1_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[0] = (float)(Reset_time_float[0] + tmp_time);
+		pulse_num1 = (s32)(num1 - 0.5f);
 
 	//计算2#脉冲
 	//		temp_MUTI=Pr_Drive2_MultiData_Init-Pr_Drive2_MultiData;
 	temp_SINGLE2 = ((Pr_Drive2_singleData_Init_HW << 16) + Pr_Drive2_singleData_Init) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData);
 	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
-	//		num=temp_SINGLE*PULSE_NUM/ELEC_GEAR_US200;
 	num2 = (float)temp_SINGLE2;
-	num2 = (float)num2 * PULSE_NUM;
-	num2 = (float)num2 / ELEC_GEAR_US200;
-	if (num2 > 0.0f)
-		temp_pulse2 = (s32)(num2 + 0.5f);
-	else
-		temp_pulse2 = (s32)(num2 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo2, temp_pulse2, Pw_Driver2_Speed, Pw_Driver2_AccTime, 0);
-	Driver2_Pos_Start_Sort = 1;
+	num2 *= PULSE_NUM;
+	num2 /= ELEC_GEAR_US200;
 
-	//计算2#运行时间
-	Reset_time_float[1] = abs(temp_pulse2);
-	Reset_time_float[1] = (float)Reset_time_float[1] * 60000;
-	Reset_time_float[1] = (float)Reset_time_float[1] / (PULSE_NUM * Pw_Driver2_Speed);
-	tmp_time = (float)Pw_Driver2_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[1] = (float)(Reset_time_float[1] + tmp_time);
+	if (num2 > 0.0f)
+		pulse_num2 = (s32)(num2 + 0.5f);
+	else
+		pulse_num2 = (s32)(num2 - 0.5f);
 
 	//计算3#脉冲
 	temp_MUTI3 = Pr_Drive3_MultiData_Init - Pr_Drive3_MultiData;
 	temp_SINGLE3 = ((Pr_Drive3_singleData_Init_HW << 16) + Pr_Drive3_singleData_Init) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData);
-	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
+	// num3 = temp_MUTI3 * PULSE_NUM + temp_SINGLE3 * PULSE_NUM / ELEC_GEAR;
 	num3 = (float)temp_MUTI3;
-	num3 = (float)num3 * PULSE_NUM;
-	tmp1_f = (float)temp_SINGLE3;
-	tmp1_f = (float)tmp1_f * PULSE_NUM / ELEC_GEAR;
-	num3 = (float)(num3 + tmp1_f);
+	num3 *= PULSE_NUM;
+	tmp_num3 = (float)temp_SINGLE3;
+	tmp_num3 *= PULSE_NUM;
+	num3 = (float)(num3 + tmp_num3 / ELEC_GEAR);
 
 	if (num3 > 0.0f)
-		temp_pulse3 = (s32)(num3 + 0.5f);
+		pulse_num3 = (s32)(num3 + 0.5f);
 	else
-		temp_pulse3 = (s32)(num3 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo3, temp_pulse3, Pw_Driver3_Speed, Pw_Driver3_AccTime, 0);
-	Driver3_Pos_Start_Sort = 1;
-
-	//计算3#运行时间
-	Reset_time_float[2] = abs(temp_pulse3);
-	Reset_time_float[2] = (float)Reset_time_float[2] * 60000;
-	Reset_time_float[2] = (float)Reset_time_float[2] / (PULSE_NUM * Pw_Driver3_Speed);
-	tmp_time = (float)Pw_Driver3_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[2] = (float)(Reset_time_float[2] + tmp_time);
+		pulse_num3 = (s32)(num3 - 0.5f);
 
 	//计算4#脉冲
 	temp_MUTI4 = Pr_Drive4_MultiData_Init - Pr_Drive4_MultiData;
 	temp_SINGLE4 = ((Pr_Drive4_singleData_Init_HW << 16) + Pr_Drive4_singleData_Init) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData);
-	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
+	// num4 = temp_MUTI4 * PULSE_NUM + temp_SINGLE4 * PULSE_NUM / ELEC_GEAR;
 	num4 = (float)temp_MUTI4;
-	num4 = (float)num4 * PULSE_NUM;
-	tmp1_f = (float)temp_SINGLE4;
-	tmp1_f = (float)tmp1_f * PULSE_NUM / ELEC_GEAR;
-	num4 = (float)(num4 + tmp1_f);
+	num4 *= PULSE_NUM;
+	tmp_num4 = (float)temp_SINGLE4;
+	tmp_num4 *= PULSE_NUM;
+	num4 = (float)(num4 + tmp_num4 / ELEC_GEAR);
 
 	if (num4 > 0.0f)
-		temp_pulse4 = (s32)(num4 + 0.5f);
+		pulse_num4 = (s32)(num4 + 0.5f);
 	else
-		temp_pulse4 = (s32)(num4 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo4, temp_pulse4, Pw_Driver4_Speed, Pw_Driver4_AccTime, 0);
-	Driver4_Pos_Start_Sort = 1;
-
-	//计算4#运行时间
-	Reset_time_float[3] = abs(temp_pulse4);
-	Reset_time_float[3] = (float)Reset_time_float[3] * 60000;
-	Reset_time_float[3] = (float)Reset_time_float[3] / (PULSE_NUM * Pw_Driver4_Speed);
-	tmp_time = (float)Pw_Driver4_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[3] = (float)(Reset_time_float[3] + tmp_time);
+		pulse_num4 = (s32)(num4 - 0.5f);
 
 	//计算5#脉冲
 	temp_MUTI5 = Pr_Drive5_MultiData_Init - Pr_Drive5_MultiData;
 	temp_SINGLE5 = ((Pr_Drive5_singleData_Init_HW << 16) + Pr_Drive5_singleData_Init) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData);
-	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
+	// num5 = temp_MUTI5 * PULSE_NUM + temp_SINGLE5 * PULSE_NUM / ELEC_GEAR;
 	num5 = (float)temp_MUTI5;
-	num5 = (float)num5 * PULSE_NUM;
-	tmp1_f = (float)temp_SINGLE5;
-	tmp1_f = (float)tmp1_f * PULSE_NUM / ELEC_GEAR;
-	num5 = (float)(num5 + tmp1_f);
+	num5 *= PULSE_NUM;
+	tmp_num5 = (float)temp_SINGLE5;
+	tmp_num5 *= PULSE_NUM;
+	num5 = (float)(num5 + tmp_num5 / ELEC_GEAR);
 
 	if (num5 > 0.0f)
-		temp_pulse5 = (s32)(num5 + 0.5f);
+		pulse_num5 = (s32)(num5 + 0.5f);
 	else
-		temp_pulse5 = (s32)(num5 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo5, temp_pulse5, Pw_Driver5_Speed, Pw_Driver5_AccTime, 0);
-	Driver5_Pos_Start_Sort = 1;
-
-	//计算5#运行时间
-	Reset_time_float[4] = abs(temp_pulse5);
-	Reset_time_float[4] = (float)Reset_time_float[4] * 60000;
-	Reset_time_float[4] = (float)Reset_time_float[4] / (PULSE_NUM * Pw_Driver5_Speed);
-	tmp_time = (float)Pw_Driver5_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[4] = (float)(Reset_time_float[4] + tmp_time);
+		pulse_num5 = (s32)(num4 - 0.5f);
 
 	//计算6#脉冲
 	temp_MUTI6 = Pr_Drive6_MultiData_Init - Pr_Drive6_MultiData;
 	temp_SINGLE6 = ((Pr_Drive6_singleData_Init_HW << 16) + Pr_Drive6_singleData_Init) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData);
-	//		num=temp_MUTI*PULSE_NUM+temp_SINGLE*PULSE_NUM/ELEC_GEAR;
+	// num6 = temp_MUTI6 * PULSE_NUM + temp_SINGLE6 * PULSE_NUM / ELEC_GEAR;
 	num6 = (float)temp_MUTI6;
-	num6 = (float)num6 * PULSE_NUM;
-	tmp1_f = (float)temp_SINGLE6;
-	tmp1_f = (float)tmp1_f * PULSE_NUM / ELEC_GEAR;
-	num6 = (float)(num6 + tmp1_f);
+	num6 *= PULSE_NUM;
+	tmp_num6 = (float)temp_SINGLE6;
+	tmp_num6 *= PULSE_NUM;
+	num6 = (float)(num6 + tmp_num6 / ELEC_GEAR);
 
 	if (num6 > 0.0f)
-		temp_pulse6 = (s32)(num6 + 0.5f);
+		pulse_num6 = (s32)(num6 + 0.5f);
 	else
-		temp_pulse6 = (s32)(num6 - 0.5f);
-	Locate_Rle_1(Pw_EquipmentNo6, temp_pulse6, Pw_Driver6_Speed, Pw_Driver6_AccTime, 0);
-	Driver6_Pos_Start_Sort = 1;
+		pulse_num6 = (s32)(num6 - 0.5f);
 
-	//计算6#运行时间
-	Reset_time_float[5] = abs(temp_pulse6);
-	Reset_time_float[5] = (float)Reset_time_float[5] * 60000;
-	Reset_time_float[5] = (float)Reset_time_float[5] / (PULSE_NUM * Pw_Driver6_Speed);
-	tmp_time = (float)Pw_Driver6_AccTime;
-	tmp_time = (float)tmp_time * Pw_Acc_Delay_Ratio / 100;
-	Reset_time_float[5] = (float)(Reset_time_float[5] + tmp_time);
+#else //=0表示位置数据类型为编码器数据;=1表示位置数据类型为脉冲值
+	pulse_num1 = ((Pr_Drive1_singleData_Init_HW << 16) + Pr_Drive1_singleData_Init) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData);
+	pulse_num2 = ((Pr_Drive2_singleData_Init_HW << 16) + Pr_Drive2_singleData_Init) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData);
+	pulse_num3 = ((Pr_Drive3_singleData_Init_HW << 16) + Pr_Drive3_singleData_Init) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData);
+	pulse_num4 = ((Pr_Drive4_singleData_Init_HW << 16) + Pr_Drive4_singleData_Init) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData);
+	pulse_num5 = ((Pr_Drive5_singleData_Init_HW << 16) + Pr_Drive5_singleData_Init) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData);
+	pulse_num6 = ((Pr_Drive6_singleData_Init_HW << 16) + Pr_Drive6_singleData_Init) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData);
+#endif
 
-	Reset_time_I[0] = (s32)Reset_time_float[0];
-	Reset_time_I[1] = (s32)Reset_time_float[1];
-	Reset_time_I[2] = (s32)Reset_time_float[2];
-	Reset_time_I[3] = (s32)Reset_time_float[3];
-	Reset_time_I[4] = (s32)Reset_time_float[4];
-	Reset_time_I[5] = (s32)Reset_time_float[5];
+	if (pulse_num1 >= 0)
+	{
+		dir1 = M1_CLOCKWISE;
+		pulse_num1_P = pulse_num1;
+	}
+	else
+	{
+		dir1 = M1_UNCLOCKWISE;
+		pulse_num1_P = -pulse_num1;
+	}
 
-	sort(Reset_time_I, 6); //得到运行时间的最大值，放到最后一个中
-	Reset_time_Max = abs(Reset_time_I[5]);
-	Pw_Current_Run_Time = Reset_time_Max / 10;
+	if (pulse_num2 >= 0)
+	{
+		dir2 = M2_CLOCKWISE;
+		pulse_num2_P = pulse_num2;
+	}
+	else
+	{
+		dir2 = M2_UNCLOCKWISE;
+		pulse_num2_P = -pulse_num2;
+	}
+
+	if (pulse_num3 >= 0)
+	{
+		dir3 = M3_CLOCKWISE;
+		pulse_num3_P = pulse_num3;
+	}
+	else
+	{
+		dir3 = M3_UNCLOCKWISE;
+		pulse_num3_P = pulse_num3;
+	}
+
+	if (pulse_num4 >= 0)
+	{
+		dir4 = M4_CLOCKWISE;
+		pulse_num4_P = pulse_num4;
+	}
+	else
+	{
+		dir4 = M4_UNCLOCKWISE;
+		pulse_num4_P = -pulse_num4;
+	}
+
+	if (pulse_num5 >= 0)
+	{
+		dir5 = M5_CLOCKWISE;
+		pulse_num5_P = pulse_num5;
+	}
+	else
+	{
+		dir5 = M5_UNCLOCKWISE;
+		pulse_num5_P = -pulse_num5;
+	}
+
+	if (pulse_num6 >= 0)
+	{
+		dir6 = M6_CLOCKWISE;
+		pulse_num6_P = pulse_num6;
+	}
+	else
+	{
+		dir6 = M6_UNCLOCKWISE;
+		pulse_num6_P = -pulse_num6;
+	}
+	//停止后才能继续发送
+	if (motor1.running == 0 && motor2.running == 0 && motor3.running == 0 &&
+		motor4.running == 0 && motor5.running == 0 && motor6.running == 0)
+	{
+		HAL_Delay(100);
+
+		Run_Motors_sync(dir1, pulse_num1_P, Pw_Motor1_StartSpeed, Pw_Motor1_SetSpeed, Pw_Motor1_ACCSpeed,
+						dir2, pulse_num2_P, Pw_Motor2_StartSpeed, Pw_Motor2_SetSpeed, Pw_Motor2_ACCSpeed,
+						dir3, pulse_num3_P, Pw_Motor3_StartSpeed, Pw_Motor3_SetSpeed, Pw_Motor3_ACCSpeed,
+						dir4, pulse_num4_P, Pw_Motor4_StartSpeed, Pw_Motor4_SetSpeed, Pw_Motor4_ACCSpeed,
+						dir5, pulse_num5_P, Pw_Motor5_StartSpeed, Pw_Motor5_SetSpeed, Pw_Motor5_ACCSpeed,
+						dir6, pulse_num6_P, Pw_Motor6_StartSpeed, Pw_Motor6_SetSpeed, Pw_Motor6_ACCSpeed);
+	}
 }
 
 //判断复位到原点子程序
 void is_Reseted(void)
 {
 	u32 temp_PosError_Set;
-	float num1, num2, num3, num4, num5, num6;
+	signed long long num1, num2, num3, num4, num5, num6;
 	s16 temp_MUTI;
-	float temp_SINGLE;
+	signed long long temp_SINGLE;
 
+#if (POS_TYPE == 0)
 	//位置偏差
 	temp_PosError_Set = (Pw_PosError_Set_HW << 16) + Pw_PosError_Set;
-	if (Pr_AllRun == 0) //所有电机都停止才判断是否在原点
-	{
-		//		temp_MUTI=Pr_Drive1_MultiData_Init-Pr_Drive1_MultiData;
-		temp_SINGLE = (float)((Pr_Drive1_singleData_Init_HW << 16) + Pr_Drive1_singleData_Init) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData);
-		//		num1=temp_MUTI*ELEC_GEAR+temp_SINGLE;
-		num1 = (float)temp_SINGLE;
 
-		//		temp_MUTI=Pr_Drive2_MultiData_Init-Pr_Drive2_MultiData;
-		temp_SINGLE = (float)((Pr_Drive2_singleData_Init_HW << 16) + Pr_Drive2_singleData_Init) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData);
-		//		num2=temp_MUTI*ELEC_GEAR+temp_SINGLE;
-		num2 = (float)temp_SINGLE;
+	num1 = ((Pr_Drive1_singleData_Init_HW << 16) + Pr_Drive1_singleData_Init) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData);
 
-		temp_MUTI = Pr_Drive3_MultiData_Init - Pr_Drive3_MultiData;
-		temp_SINGLE = (float)((Pr_Drive3_singleData_Init_HW << 16) + Pr_Drive3_singleData_Init) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData);
-		num3 = (float)temp_MUTI;
-		num3 = (float)(num3 * ELEC_GEAR + temp_SINGLE);
+	num2 = (float)((Pr_Drive2_singleData_Init_HW << 16) + Pr_Drive2_singleData_Init) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData);
 
-		temp_MUTI = Pr_Drive4_MultiData_Init - Pr_Drive4_MultiData;
-		temp_SINGLE = (float)((Pr_Drive4_singleData_Init_HW << 16) + Pr_Drive4_singleData_Init) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData);
-		num4 = (float)temp_MUTI;
-		num4 = (float)(num4 * ELEC_GEAR + temp_SINGLE);
+	temp_MUTI = Pr_Drive3_MultiData_Init - Pr_Drive3_MultiData;
+	temp_SINGLE = ((Pr_Drive3_singleData_Init_HW << 16) + Pr_Drive3_singleData_Init) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData);
+	num3 = temp_MUTI * ELEC_GEAR;
+	num3 += temp_SINGLE;
 
-		temp_MUTI = Pr_Drive5_MultiData_Init - Pr_Drive5_MultiData;
-		temp_SINGLE = (float)((Pr_Drive5_singleData_Init_HW << 16) + Pr_Drive5_singleData_Init) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData);
-		num5 = (float)temp_MUTI;
-		num5 = (float)(num5 * ELEC_GEAR + temp_SINGLE);
+	temp_MUTI = Pr_Drive4_MultiData_Init - Pr_Drive4_MultiData;
+	temp_SINGLE = ((Pr_Drive4_singleData_Init_HW << 16) + Pr_Drive4_singleData_Init) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData);
+	num4 = temp_MUTI * ELEC_GEAR;
+	num4 += temp_SINGLE;
 
-		temp_MUTI = Pr_Drive6_MultiData_Init - Pr_Drive6_MultiData;
-		temp_SINGLE = (float)((Pr_Drive6_singleData_Init_HW << 16) + Pr_Drive6_singleData_Init) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData);
-		num6 = (float)temp_MUTI;
-		num6 = (float)(num6 * ELEC_GEAR + temp_SINGLE);
+	temp_MUTI = Pr_Drive5_MultiData_Init - Pr_Drive5_MultiData;
+	temp_SINGLE = ((Pr_Drive5_singleData_Init_HW << 16) + Pr_Drive5_singleData_Init) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData);
+	num5 = temp_MUTI * ELEC_GEAR;
+	num5 += temp_SINGLE;
 
-		if (fabsf(num1) < temp_PosError_Set && fabsf(num2) < temp_PosError_Set && fabsf(num3) < temp_PosError_Set && fabsf(num4) < temp_PosError_Set && fabsf(num5) < temp_PosError_Set && fabsf(num6) < temp_PosError_Set)
-		{
-			F_Reseted = 1; //=1，位置接近，并且已经停机，则置复位到原点标志
-		}
-		else
-			F_Reseted = 0;
-	}
+	temp_MUTI = Pr_Drive6_MultiData_Init - Pr_Drive6_MultiData;
+	temp_SINGLE = ((Pr_Drive6_singleData_Init_HW << 16) + Pr_Drive6_singleData_Init) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData);
+	num6 = temp_MUTI * ELEC_GEAR;
+	num6 += temp_SINGLE;
+
+	if (abs(num1) < temp_PosError_Set && abs(num2) < temp_PosError_Set && abs(num3) < temp_PosError_Set && abs(num4) < temp_PosError_Set && abs(num5) < temp_PosError_Set && abs(num6) < temp_PosError_Set)
+		F_Reseted = 1; //=1，位置接近，并且已经停机，则置复位到原点标志
+	else
+		F_Reseted = 0;
+#else
+	if (K_StartPoint)
+		F_Reseted = 1; //=1，位置接近，并且已经停机，则置复位到原点标志
+	else
+		F_Reseted = 0;
+#endif
 }
 
 //发送停机命令子程序
@@ -906,73 +883,42 @@ void Normal_Run(void)
 			{
 				if ((arr_p1[7] & DI2) == 0 && (arr_p1[8] & DI3) == 0) //条件1=1，并且DI2有信号，则不运行；条件2=1，并且DI3有信号，则不运行；否则，运行
 				{
-					//6个命令队列为空才能填充，有任何一个不为空，也不填充
-					if (Com1_Driver1_Queue_isEmpty() && Com1_Driver2_Queue_isEmpty() && Com2_Driver3_Queue_isEmpty() &&
-						Com2_Driver4_Queue_isEmpty() && Com3_Driver5_Queue_isEmpty() && Com3_Driver6_Queue_isEmpty())
+					//停止后才能继续发送
+					if (motor1.running == 0 && motor2.running == 0 && motor3.running == 0 &&
+						motor4.running == 0 && motor5.running == 0 && motor6.running == 0)
 					{
-						if (T_Driver1_FillCMD != SClk10Ms)
-						{
-							T_Driver1_FillCMD = SClk10Ms;
-							C_Driver1_FillCMD++;
-							Pr_runtime_show = C_Driver1_FillCMD;
-							//							 Pw_Current_Run_Time=arrp_p1_Last[36];
-
-							if (C_Driver1_FillCMD > Pw_Current_Run_Time) //Pw_Current_Run_Time  命令缓冲区队列为空后，再延时“指令运行时间”再发送下一条指令
-							{
-								//这个地方再加一个延时，所有电机都停止后，延时一段时间，再发指令
-								if (Pr_F_AllStopped != 0) //必须所有电机停止，才能发下一条指令
-								{
-									C_AllStop++;
-									if (C_AllStop > Pw_AllStopped_Delay) //再加一个延时判断，相当于全部停机后，再延时Pw_AllStopped_Delay*10ms
-									{
-										C_AllStop = 0;
-										C_Driver1_FillCMD = 0;
-
-										//位置数据已经发送完毕
-										if (Driver1_Pos_Start_Sort == 2 && Driver2_Pos_Start_Sort == 2 && Driver3_Pos_Start_Sort == 2 &&
-											Driver4_Pos_Start_Sort == 2 && Driver5_Pos_Start_Sort == 2 && Driver6_Pos_Start_Sort == 2)
-										{
-											//并且写入正确，才能填充启动命令
-											if (((Pw_ComWriteErr_Stop != 0) & (!Pr_AllDriver_Cmd_OK_F)) == 0) //如果所有位置命令写入正确，才会启动
-											{
-												Fill_Cmd();
-												Driver1_delay_F = 0;
-												C_DO_delayCount = 0;
-												C_DO_Open_delayCount = 0;
-												F_Close_Hand = 0;						  //清标志位，允许电磁阀打开
-												Pw_EquipStatus = Pw_EquipStatus & 0xFDFF; //清标志位，位置写入错误停机
-											}
-											else
-											{
-												Pw_EquipStatus = Pw_EquipStatus | 0x0200; //=512，位置写入错误停机
-											}
-										}
-									}
-								}
-							}
-						}
+						Fill_Cmd();
+						Driver1_delay_F = 0;
+						C_DO_delayCount = 0;
+						C_DO_Open_delayCount = 0;
+						F_Close_Hand = 0;						  //清标志位，允许电磁阀打开
+						Pw_EquipStatus = Pw_EquipStatus & 0xFDFF; //清标志位，位置写入错误停机
 					}
 					else
 					{
-						C_Driver1_FillCMD = 0;
+						Pw_EquipStatus = Pw_EquipStatus | 0x0200; //=512，位置写入错误停机
 					}
 				}
 				else
 				{
-					if ((arr_p1[7] & DI2) != 0)
-					{
-						Pw_EquipStatus = Pw_EquipStatus | 0x0040; //条件1停机
-					}
-					else if ((arr_p1[8] & DI3) != 0)
-					{
-						Pw_EquipStatus = Pw_EquipStatus | 0x0080; //条件2停机
-					}
+					C_Driver1_FillCMD = 0;
 				}
 			}
 			else
 			{
-				Pw_EquipStatus = Pw_EquipStatus | 0x0100; //停机命令停机
+				if ((arr_p1[7] & DI2) != 0)
+				{
+					Pw_EquipStatus = Pw_EquipStatus | 0x0040; //条件1停机
+				}
+				else if ((arr_p1[8] & DI3) != 0)
+				{
+					Pw_EquipStatus = Pw_EquipStatus | 0x0080; //条件2停机
+				}
 			}
+		}
+		else
+		{
+			Pw_EquipStatus = Pw_EquipStatus | 0x0100; //停机命令停机
 		}
 	}
 }
@@ -981,48 +927,126 @@ void Normal_Run(void)
 void Fill_Cmd(void)
 {
 	u32 temp_count;
+	u8 dir1, dir2, dir3, dir4, dir5, dir6;
+	s32 pulse_num1, pulse_num2, pulse_num3, pulse_num4, pulse_num5, pulse_num6;
+	u32 pulse_num1_P, pulse_num2_P, pulse_num3_P, pulse_num4_P, pulse_num5_P, pulse_num6_P;
 
 	if (arr_p1[1] >= 1 && arr_p1[1] <= COM_CMD_NUM - 1) //第1个字节为命令号，在1-29之间才执行，=0则不执行
 	{
 		if (arr_p1[2] >= 1 && arr_p1[2] <= POS_NUM) //第2个字节为位置号，在1-15之间才执行，=0则不执行
 		{
-			Pr_Driver_Previous_No = Pr_Driver_Running_No; //前一个执行指令号
-			Pr_Driver_Running_No = arr_p1[1];			  //某条指令正在执行，也即表示上一条指令执行完毕
-			arrp_p1_Last = arr_p1;						  //保存上一条指令的命令指针
-
-			Send_Start_Cmd(Pw_EquipmentNo1);
-			Send_Start_Cmd(Pw_EquipmentNo2);
-			Send_Start_Cmd(Pw_EquipmentNo3);
-			Send_Start_Cmd(Pw_EquipmentNo4);
-			Send_Start_Cmd(Pw_EquipmentNo5);
-			Send_Start_Cmd(Pw_EquipmentNo6);
-
-			Pw_Current_Run_Time = arr_p1[D_RUN_TIME]; //运行时间
-
-			Pw_EquipStatus = Pw_EquipStatus & 0xFFDF; //清最大位置限制停机状态
-
-			Driver1_Pos_Start_Sort = 3;
-			Driver2_Pos_Start_Sort = 3;
-			Driver3_Pos_Start_Sort = 3;
-			Driver4_Pos_Start_Sort = 3;
-			Driver5_Pos_Start_Sort = 3;
-			Driver6_Pos_Start_Sort = 3;
-
-			//指向下一条要执行的指令
-			if ((arr_p1[POS_CMD_SIZE + 1]) != 0) //下一条要执行的指令
-				arr_p1 += POS_CMD_SIZE;
-			else
+			//停止后才能继续发送
+			if (motor1.running == 0 && motor2.running == 0 && motor3.running == 0 &&
+				motor4.running == 0 && motor5.running == 0 && motor6.running == 0)
 			{
-				arr_p1 = &w_ParLst_Pos_CMD;
-				Pr_RUN_Count++; //运行圈数+1
+				Pr_Driver_Previous_No = Pr_Driver_Running_No; //前一个执行指令号
+				Pr_Driver_Running_No = arr_p1[1];			  //某条指令正在执行，也即表示上一条指令执行完毕
+				arrp_p1_Last = arr_p1;						  //保存上一条指令的命令指针
 
-				temp_count = (Pw_Total_RUN_Count_HW << 16) + Pw_Total_RUN_Count;
-				temp_count++; //累计运行圈数+1
-				Pw_Total_RUN_Count = temp_count & 0x0000FFFF;
-				Pw_Total_RUN_Count_HW = (temp_count & 0xFFFF0000) >> 16;
+				pulse_num1 = (arr_p1[CMD_PULSE1_HIGH] << 16) + arr_p1[CMD_PULSE1_LOW];
+				pulse_num2 = (arr_p1[CMD_PULSE2_HIGH] << 16) + arr_p1[CMD_PULSE2_LOW];
+				pulse_num3 = (arr_p1[CMD_PULSE3_HIGH] << 16) + arr_p1[CMD_PULSE3_LOW];
+				pulse_num4 = (arr_p1[CMD_PULSE4_HIGH] << 16) + arr_p1[CMD_PULSE4_LOW];
+				pulse_num5 = (arr_p1[CMD_PULSE5_HIGH] << 16) + arr_p1[CMD_PULSE5_LOW];
+				pulse_num6 = (arr_p1[CMD_PULSE6_HIGH] << 16) + arr_p1[CMD_PULSE6_LOW];
+				if (pulse_num1 >= 0)
+				{
+					dir1 = M1_CLOCKWISE;
+					pulse_num1_P = pulse_num1;
+				}
+				else
+				{
+					dir1 = M1_UNCLOCKWISE;
+					pulse_num1_P = -pulse_num1;
+				}
+				if (pulse_num2 >= 0)
+				{
+					dir2 = M2_CLOCKWISE;
+					pulse_num2_P = pulse_num2;
+				}
+				else
+				{
+					dir2 = M2_UNCLOCKWISE;
+					pulse_num2_P = -pulse_num2;
+				}
+
+				if (pulse_num3 >= 0)
+				{
+					dir3 = M3_CLOCKWISE;
+					pulse_num3_P = pulse_num3;
+				}
+				else
+				{
+					dir3 = M3_UNCLOCKWISE;
+					pulse_num3_P = pulse_num3;
+				}
+				if (pulse_num4 >= 0)
+				{
+					dir4 = M4_CLOCKWISE;
+					pulse_num4_P = pulse_num4;
+				}
+				else
+				{
+					dir4 = M4_UNCLOCKWISE;
+					pulse_num4_P = -pulse_num4;
+				}
+				if (pulse_num5 >= 0)
+				{
+					dir5 = M5_CLOCKWISE;
+					pulse_num5_P = pulse_num5;
+				}
+				else
+				{
+					dir5 = M5_UNCLOCKWISE;
+					pulse_num5_P = -pulse_num5;
+				}
+				if (pulse_num6 >= 0)
+				{
+					dir6 = M6_CLOCKWISE;
+					pulse_num6_P = pulse_num6;
+				}
+				else
+				{
+					dir6 = M6_UNCLOCKWISE;
+					pulse_num6_P = -pulse_num6;
+				}
+
+				// HAL_Delay(100);
+
+				Run_Motors_sync(dir1, pulse_num1_P, Pw_Motor1_StartSpeed, arr_p1[CMD_SPEED1], arr_p1[CMD_ACC_SPEED1],
+								dir2, pulse_num2_P, Pw_Motor2_StartSpeed, arr_p1[CMD_SPEED2], arr_p1[CMD_ACC_SPEED2],
+								dir3, pulse_num3_P, Pw_Motor3_StartSpeed, arr_p1[CMD_SPEED3], arr_p1[CMD_ACC_SPEED3],
+								dir4, pulse_num4_P, Pw_Motor4_StartSpeed, arr_p1[CMD_SPEED4], arr_p1[CMD_ACC_SPEED4],
+								dir5, pulse_num5_P, Pw_Motor5_StartSpeed, arr_p1[CMD_SPEED5], arr_p1[CMD_ACC_SPEED5],
+								dir6, pulse_num6_P, Pw_Motor6_StartSpeed, arr_p1[CMD_SPEED6], arr_p1[CMD_ACC_SPEED6]);
+
+				Pw_Current_Run_Time = arr_p1[CMD_RUN_TIME]; //运行时间
+
+				Pw_EquipStatus = Pw_EquipStatus & 0xFFDF; //清最大位置限制停机状态
+
+				Driver1_Pos_Start_Sort = 3;
+				Driver2_Pos_Start_Sort = 3;
+				Driver3_Pos_Start_Sort = 3;
+				Driver4_Pos_Start_Sort = 3;
+				Driver5_Pos_Start_Sort = 3;
+				Driver6_Pos_Start_Sort = 3;
+
+				//指向下一条要执行的指令
+				if ((arr_p1[POS_CMD_SIZE + 1]) != 0) //下一条要执行的指令
+					arr_p1 += POS_CMD_SIZE;
+				else
+				{
+					arr_p1 = &w_ParLst_Pos_CMD;
+					Pr_RUN_Count++; //运行圈数+1
+
+					temp_count = (Pw_Total_RUN_Count_HW << 16) + Pw_Total_RUN_Count;
+					temp_count++; //累计运行圈数+1
+					Pw_Total_RUN_Count = temp_count & 0x0000FFFF;
+					Pw_Total_RUN_Count_HW = (temp_count & 0xFFFF0000) >> 16;
+				}
+
+				Pr_Send_Data_F = 0; //发送标志清0，可以发送位置
 			}
-
-			Pr_Send_Data_F = 0; //发送标志清0，可以发送位置
 		}
 	}
 }
@@ -1746,11 +1770,11 @@ u8 Com3_Driver6_Queue_isEmpty(void)
 	return Com3_Driver6_Queue_Front == -1;
 }
 
-//判断COM4命令队列是否为空
-u8 Com4_Queue_isEmpty(void)
-{
-	return Com4_Queue_Front == -1;
-}
+////判断COM4命令队列是否为空
+//u8 Com4_Queue_isEmpty(void)
+//{
+//	return Com4_Queue_Front == -1;
+//}
 
 //判断COM1命令队列是否为满
 u8 Com1_Driver1_Queue_isFull(void)
@@ -1784,11 +1808,11 @@ u8 Com3_Driver6_Queue_isFull(void)
 	return (Com3_Driver6_Queue_Front == (Com3_Driver6_Queue_Rear + 1) % COM_CMD_NUM);
 }
 
-//判断COM4命令队列是否为满
-u8 Com4_Queue_isFull(void)
-{
-	return (Com4_Queue_Front == (Com4_Queue_Rear + 1) % COM_CMD_NUM);
-}
+////判断COM4命令队列是否为满
+//u8 Com4_Queue_isFull(void)
+//{
+//	return (Com4_Queue_Front == (Com4_Queue_Rear + 1) % COM_CMD_NUM);
+//}
 
 //填充停机命令子程序
 void Stop_Driver(u8 driver_no)
@@ -2059,17 +2083,17 @@ u8 Cal_Pos_Speed(void)
 	}
 
 	//如果头和尾的位置号相等，则判断脉冲和伺服是否==0
-	temp_arr_Cmd1 = &w_ParLst_Pos_CMD;
-	if (temp_arr_Cmd_Last[2] == temp_arr_Cmd1[2])
-	{
-		//计算因为四舍五入可能产生的误差
-		Cal_Sum_Err(1);
-		Cal_Sum_Err(2);
-		Cal_Sum_Err(3);
-		Cal_Sum_Err(4);
-		Cal_Sum_Err(5);
-		Cal_Sum_Err(6);
-	}
+	// temp_arr_Cmd1 = &w_ParLst_Pos_CMD;
+	// if (temp_arr_Cmd_Last[2] == temp_arr_Cmd1[2])
+	// {
+	// 	//计算因为四舍五入可能产生的误差
+	// 	Cal_Sum_Err(1);
+	// 	Cal_Sum_Err(2);
+	// 	Cal_Sum_Err(3);
+	// 	Cal_Sum_Err(4);
+	// 	Cal_Sum_Err(5);
+	// 	Cal_Sum_Err(6);
+	// }
 
 	return 0;
 }
@@ -2162,45 +2186,12 @@ void Cal_One_Pos_Speed(s32 Cmd_No1, s32 Cmd_No2)
 	s32 *temp_arr_Cmd2;
 	s32 *arr_P1;
 	s32 Pos_No1, Pos_No2;
-
-	float num1, tmp1_f;
-	s32 tmp_num1;
-	//	s16 temp_MUTI1;
-	float temp_SINGLE1;
-
-	float num2, tmp2_f;
-	s32 tmp_num2;
-	//	s16 temp_MUTI2;
-	float temp_SINGLE2;
-
-	float num3, tmp3_f;
-	s32 tmp_num3;
-	s16 temp_MUTI3;
-	float temp_SINGLE3;
-
-	float num4, tmp4_f;
-	s32 tmp_num4;
-	s16 temp_MUTI4;
-	float temp_SINGLE4;
-
-	float num5, tmp5_f;
-	s32 tmp_num5;
-	s16 temp_MUTI5;
-	float temp_SINGLE5;
-
-	float num6, tmp6_f;
-	s32 tmp_num6;
-	s16 temp_MUTI6;
-	float temp_SINGLE6;
-
-	//	s32 pulse_num[6];
-	u32 speed1, speed2, speed3, speed4, speed5, speed6;
-	float f_speed1, f_speed2, f_speed3, f_speed4, f_speed5, f_speed6;
+	float num1, num2, num3, num4, num5, num6;
+	float tmp_num3, tmp_num4, tmp_num5, tmp_num6;
+	signed long long temp_SINGLE1, temp_SINGLE2, temp_SINGLE3, temp_SINGLE4, temp_SINGLE5, temp_SINGLE6;
+	s16 temp_MUTI3, temp_MUTI4, temp_MUTI5, temp_MUTI6;
 	u32 Run_Speed_Ratio;
-	float Run_time; //本条指令的运行时间
-	float Run_time1, Run_time2, Run_time3, Run_time4, Run_time5, Run_time6;
-	float tmp_time1, tmp_time2, tmp_time3, tmp_time4, tmp_time5, tmp_time6;
-	float time[6];
+	s32 pulse_num1, pulse_num2, pulse_num3, pulse_num4, pulse_num5, pulse_num6;
 
 	temp_arr_Cmd1 = &w_ParLst_Pos_CMD;
 	temp_arr_Cmd2 = &w_ParLst_Pos_CMD;
@@ -2215,314 +2206,118 @@ void Cal_One_Pos_Speed(s32 Cmd_No1, s32 Cmd_No2)
 	if (Pos_No2 >= 1 && Pos_No2 <= POS_NUM)
 		Pos_No2--;
 
+#if (POS_TYPE == 0)
 	//	temp_MUTI1=(arr_P1[Pos_No2*POS_SIZE+1]-arr_P1[Pos_No1*POS_SIZE+1]);
 	temp_SINGLE1 = ((arr_P1[Pos_No2 * POS_SIZE + 3] << 16) + arr_P1[Pos_No2 * POS_SIZE + 2] - ((arr_P1[Pos_No1 * POS_SIZE + 3] << 16) + arr_P1[Pos_No1 * POS_SIZE + 2]));
-	//	num1=temp_MUTI1*PULSE_NUM+temp_SINGLE1*PULSE_NUM/ELEC_GEAR;
-	//	num1=temp_SINGLE1*PULSE_NUM/ELEC_GEAR_US200;
-	tmp1_f = (float)temp_SINGLE1; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-	tmp1_f = (float)tmp1_f * PULSE_NUM;
-	tmp1_f = (float)tmp1_f / ELEC_GEAR_US200;
-	num1 = (float)tmp1_f;
+	num1 = (float)temp_SINGLE1;
+	num1 *= PULSE_NUM;
+	num1 /= ELEC_GEAR_US200;
+	if (num1 > 0.0f)
+		pulse_num1 = (s32)(num1 + 0.5f);
+	else
+		pulse_num1 = (s32)(num1 - 0.5f);
 
 	//	temp_MUTI2=(arr_P1[Pos_No2*POS_SIZE+4]-arr_P1[Pos_No1*POS_SIZE+4]);
 	temp_SINGLE2 = ((arr_P1[Pos_No2 * POS_SIZE + 6] << 16) + arr_P1[Pos_No2 * POS_SIZE + 5] - ((arr_P1[Pos_No1 * POS_SIZE + 6] << 16) + arr_P1[Pos_No1 * POS_SIZE + 5]));
-	//	num2=temp_MUTI2*PULSE_NUM+temp_SINGLE2*PULSE_NUM/ELEC_GEAR;
-	tmp2_f = (float)temp_SINGLE2; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-	tmp2_f = (float)tmp2_f * PULSE_NUM;
-	tmp2_f = (float)tmp2_f / ELEC_GEAR_US200;
-	num2 = (float)tmp2_f;
+	num2 = (float)temp_SINGLE2;
+	num2 *= PULSE_NUM;
+	num2 /= ELEC_GEAR_US200;
+	if (num2 > 0.0f)
+		pulse_num2 = (s32)(num2 + 0.5f);
+	else
+		pulse_num2 = (s32)(num2 - 0.5f);
 
 	temp_MUTI3 = (arr_P1[Pos_No2 * POS_SIZE + 7] - arr_P1[Pos_No1 * POS_SIZE + 7]);
-	temp_SINGLE3 = (float)((arr_P1[Pos_No2 * POS_SIZE + 9] << 16) + arr_P1[Pos_No2 * POS_SIZE + 8] - ((arr_P1[Pos_No1 * POS_SIZE + 9] << 16) + arr_P1[Pos_No1 * POS_SIZE + 8]));
-	//	num3=temp_MUTI3*PULSE_NUM+temp_SINGLE3*PULSE_NUM/ELEC_GEAR;
+	temp_SINGLE3 = ((arr_P1[Pos_No2 * POS_SIZE + 9] << 16) + arr_P1[Pos_No2 * POS_SIZE + 8] - ((arr_P1[Pos_No1 * POS_SIZE + 9] << 16) + arr_P1[Pos_No1 * POS_SIZE + 8]));
 	num3 = (float)temp_MUTI3;
 	num3 = (float)num3 * PULSE_NUM;
-	tmp3_f = (float)temp_SINGLE3;
-	tmp3_f = (float)tmp3_f * PULSE_NUM;
-	tmp3_f = (float)tmp3_f / ELEC_GEAR;
-	num3 = (float)(num3 + tmp3_f);
-
-	temp_MUTI4 = (arr_P1[Pos_No2 * POS_SIZE + 10] - arr_P1[Pos_No1 * POS_SIZE + 10]);
-	temp_SINGLE4 = (float)((arr_P1[Pos_No2 * POS_SIZE + 12] << 16) + arr_P1[Pos_No2 * POS_SIZE + 11] - ((arr_P1[Pos_No1 * POS_SIZE + 12] << 16) + arr_P1[Pos_No1 * POS_SIZE + 11]));
-	//	num4=temp_MUTI4*PULSE_NUM+temp_SINGLE4*PULSE_NUM/ELEC_GEAR;
-	num4 = (float)temp_MUTI4;
-	num4 = (float)num4 * PULSE_NUM;
-	tmp4_f = (float)temp_SINGLE4;
-	tmp4_f = (float)tmp4_f * PULSE_NUM;
-	tmp4_f = (float)tmp4_f / ELEC_GEAR;
-	num4 = (float)(num4 + tmp4_f);
-
-	temp_MUTI5 = (arr_P1[Pos_No2 * POS_SIZE + 13] - arr_P1[Pos_No1 * POS_SIZE + 13]);
-	temp_SINGLE5 = (float)((arr_P1[Pos_No2 * POS_SIZE + 15] << 16) + arr_P1[Pos_No2 * POS_SIZE + 14] - ((arr_P1[Pos_No1 * POS_SIZE + 15] << 16) + arr_P1[Pos_No1 * POS_SIZE + 14]));
-	//	num5=temp_MUTI5*PULSE_NUM+temp_SINGLE5*PULSE_NUM/ELEC_GEAR;
-	num5 = (float)temp_MUTI5;
-	num5 = (float)num5 * PULSE_NUM;
-	tmp5_f = (float)temp_SINGLE5;
-	tmp5_f = (float)tmp5_f * PULSE_NUM;
-	tmp5_f = (float)tmp5_f / ELEC_GEAR;
-	num5 = (float)(num5 + tmp5_f);
-
-	temp_MUTI6 = (arr_P1[Pos_No2 * POS_SIZE + 16] - arr_P1[Pos_No1 * POS_SIZE + 16]);
-	temp_SINGLE6 = (float)((arr_P1[Pos_No2 * POS_SIZE + 18] << 16) + arr_P1[Pos_No2 * POS_SIZE + 17] - ((arr_P1[Pos_No1 * POS_SIZE + 18] << 16) + arr_P1[Pos_No1 * POS_SIZE + 17]));
-	//	num6=temp_MUTI6*PULSE_NUM+temp_SINGLE6*PULSE_NUM/ELEC_GEAR;
-	num6 = (float)temp_MUTI6;
-	num6 = (float)num6 * PULSE_NUM;
-	tmp6_f = (float)temp_SINGLE6;
-	tmp6_f = (float)tmp6_f * PULSE_NUM;
-	tmp6_f = (float)tmp6_f / ELEC_GEAR;
-	num6 = (float)(num6 + tmp6_f);
-
-	//实现四舍五入
-	if (num1 > 0.0f)
-		tmp_num1 = (s32)(num1 + 0.5f);
-	else
-		tmp_num1 = (s32)(num1 - 0.5f);
-
-	if (num2 > 0.0f)
-		tmp_num2 = (s32)(num2 + 0.5f);
-	else
-		tmp_num2 = (s32)(num2 - 0.5f);
+	tmp_num3 = (float)temp_SINGLE3;
+	tmp_num3 *= PULSE_NUM;
+	num3 = (float)(num3 + tmp_num3 / ELEC_GEAR);
 
 	if (num3 > 0.0f)
-		tmp_num3 = (s32)(num3 + 0.5f);
+		pulse_num3 = (s32)(num3 + 0.5f);
 	else
-		tmp_num3 = (s32)(num3 - 0.5f);
+		pulse_num3 = (s32)(num3 - 0.5f);
+
+	temp_MUTI4 = (arr_P1[Pos_No2 * POS_SIZE + 10] - arr_P1[Pos_No1 * POS_SIZE + 10]);
+	temp_SINGLE4 = ((arr_P1[Pos_No2 * POS_SIZE + 12] << 16) + arr_P1[Pos_No2 * POS_SIZE + 11] - ((arr_P1[Pos_No1 * POS_SIZE + 12] << 16) + arr_P1[Pos_No1 * POS_SIZE + 11]));
+	num4 = (float)temp_MUTI4;
+	num4 *= PULSE_NUM;
+	tmp_num4 = (float)temp_SINGLE4;
+	tmp_num4 *= PULSE_NUM;
+	num4 = (float)(num4 + tmp_num4 / ELEC_GEAR);
 
 	if (num4 > 0.0f)
-		tmp_num4 = (s32)(num4 + 0.5f);
+		pulse_num4 = (s32)(num4 + 0.5f);
 	else
-		tmp_num4 = (s32)(num4 - 0.5f);
+		pulse_num4 = (s32)(num4 - 0.5f);
+
+	temp_MUTI5 = (arr_P1[Pos_No2 * POS_SIZE + 13] - arr_P1[Pos_No1 * POS_SIZE + 13]);
+	temp_SINGLE5 = ((arr_P1[Pos_No2 * POS_SIZE + 15] << 16) + arr_P1[Pos_No2 * POS_SIZE + 14] - ((arr_P1[Pos_No1 * POS_SIZE + 15] << 16) + arr_P1[Pos_No1 * POS_SIZE + 14]));
+	num5 = (float)temp_MUTI5;
+	num5 *= PULSE_NUM;
+	tmp_num5 = (float)temp_SINGLE5;
+	tmp_num5 *= PULSE_NUM;
+	num5 = (float)(num5 + tmp_num5 / ELEC_GEAR);
 
 	if (num5 > 0.0f)
-		tmp_num5 = (s32)(num5 + 0.5f);
+		pulse_num5 = (s32)(num5 + 0.5f);
 	else
-		tmp_num5 = (s32)(num5 - 0.5f);
+		pulse_num5 = (s32)(num5 - 0.5f);
+
+	temp_MUTI6 = (arr_P1[Pos_No2 * POS_SIZE + 16] - arr_P1[Pos_No1 * POS_SIZE + 16]);
+	temp_SINGLE6 = ((arr_P1[Pos_No2 * POS_SIZE + 18] << 16) + arr_P1[Pos_No2 * POS_SIZE + 17] - ((arr_P1[Pos_No1 * POS_SIZE + 18] << 16) + arr_P1[Pos_No1 * POS_SIZE + 17]));
+	num6 = (float)temp_MUTI6;
+	num6 *= PULSE_NUM;
+	tmp_num6 = (float)temp_SINGLE6;
+	tmp_num6 *= PULSE_NUM;
+	num6 = (float)(num6 + tmp_num6 / ELEC_GEAR);
 
 	if (num6 > 0.0f)
-		tmp_num6 = (s32)(num6 + 0.5f);
+		pulse_num6 = (s32)(num6 + 0.5f);
 	else
-		tmp_num6 = (s32)(num6 - 0.5f);
+		pulse_num6 = (s32)(num6 - 0.5f);
 
-	//2、先根据每台电机的设定速度计算出每台电机的运行时间
-	if (Pw_Set_Run_Speed1 > 0)
-		time[0] = (float)abs(tmp_num1) / Pw_Set_Run_Speed1;
+#else
+	pulse_num1 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE1_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE1_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE1_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE1_LOW]));
+	pulse_num2 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE2_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE2_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE2_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE2_LOW]));
+	pulse_num3 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE3_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE3_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE3_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE3_LOW]));
+	pulse_num4 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE4_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE4_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE4_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE4_LOW]));
+	pulse_num5 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE5_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE5_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE5_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE5_LOW]));
+	pulse_num6 = ((arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE6_HIGH] << 16) + arr_P1[Pos_No2 * POS_SIZE + POS_SINGLE6_LOW] - ((arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE6_HIGH] << 16) + arr_P1[Pos_No1 * POS_SIZE + POS_SINGLE6_LOW]));
+#endif
+	Run_Speed_Ratio = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + CMD_RUN_SPEED_RATIO];
 
-	if (Pw_Set_Run_Speed2 > 0)
-		time[1] = (float)abs(tmp_num2) / Pw_Set_Run_Speed2;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 12] = pulse_num1 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 13] = (pulse_num1 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 14] = MOTOR_MAX_SPEED12 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 15] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 
-	if (Pw_Set_Run_Speed3 > 0)
-		time[2] = (float)abs(tmp_num3) / Pw_Set_Run_Speed3;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 16] = pulse_num2 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 17] = (pulse_num2 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 18] = MOTOR_MAX_SPEED12 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 19] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 
-	if (Pw_Set_Run_Speed4 > 0)
-		time[3] = (float)abs(tmp_num4) / Pw_Set_Run_Speed4;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 20] = pulse_num3 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 21] = (pulse_num3 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 22] = MOTOR_MAX_SPEED3 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 23] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 
-	if (Pw_Set_Run_Speed5 > 0)
-		time[4] = (float)abs(tmp_num5) / Pw_Set_Run_Speed5;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 24] = pulse_num4 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 25] = (pulse_num4 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 26] = MOTOR_MAX_SPEED456 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 27] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 
-	if (Pw_Set_Run_Speed6 > 0)
-		time[5] = (float)abs(tmp_num6) / Pw_Set_Run_Speed6;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 28] = pulse_num5 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 29] = (pulse_num5 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 30] = MOTOR_MAX_SPEED456 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 31] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 
-	//3、以最长的运行时间为基准，倒推其他电机的运行速度3、以最长的运行时间为基准，倒推其他电机的运行速度
-	sort_f(time, 6);												   //排序，得到最大运行时间time_d[5]
-	Run_Speed_Ratio = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 3]; //得到电机运行比例
-	if (time[5] > 1)
-	{
-		f_speed1 = (float)fabs(num1);
-		f_speed1 = (float)f_speed1 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed1 = (float)f_speed1 / (100 * time[5]);
-
-		f_speed2 = (float)fabs(num2);
-		f_speed2 = (float)f_speed2 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed2 = (float)f_speed2 / (100 * time[5]);
-
-		f_speed3 = (float)fabs(num3);
-		f_speed3 = (float)f_speed3 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed3 = (float)f_speed3 / (100 * time[5]);
-
-		f_speed4 = (float)fabs(num4);
-		f_speed4 = (float)f_speed4 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed4 = (float)f_speed4 / (100 * time[5]);
-
-		f_speed5 = (float)fabs(num5);
-		f_speed5 = (float)f_speed5 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed5 = (float)f_speed5 / (100 * time[5]);
-
-		f_speed6 = (float)fabs(num6);
-		f_speed6 = (float)f_speed6 * Run_Speed_Ratio; //分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-		f_speed6 = (float)f_speed6 / (100 * time[5]);
-	}
-	else
-	{
-		f_speed1 = Pw_Driver_Run_MinSpeed;
-		f_speed2 = Pw_Driver_Run_MinSpeed;
-		f_speed3 = Pw_Driver_Run_MinSpeed;
-		f_speed4 = Pw_Driver_Run_MinSpeed;
-		f_speed5 = Pw_Driver_Run_MinSpeed;
-		f_speed6 = Pw_Driver_Run_MinSpeed;
-	}
-
-	//实现四舍五入
-	if (f_speed1 > 0.0f)
-		speed1 = (u32)(f_speed1 + 0.5f);
-	else
-		speed1 = (u32)(f_speed1 - 0.5f);
-
-	if (f_speed2 > 0.0f)
-		speed2 = (u32)(f_speed2 + 0.5f);
-	else
-		speed2 = (u32)(f_speed2 - 0.5f);
-
-	if (f_speed3 > 0.0f)
-		speed3 = (u32)(f_speed3 + 0.5f);
-	else
-		speed3 = (u32)(f_speed3 - 0.5f);
-
-	if (f_speed4 > 0.0f)
-		speed4 = (u32)(f_speed4 + 0.5f);
-	else
-		speed4 = (u32)(f_speed4 - 0.5f);
-
-	if (f_speed5 > 0.0f)
-		speed5 = (u32)(f_speed5 + 0.5f);
-	else
-		speed5 = (u32)(f_speed5 - 0.5f);
-
-	if (f_speed6 > 0.0f)
-		speed6 = (u32)(f_speed6 + 0.5f);
-	else
-		speed6 = (u32)(f_speed6 - 0.5f);
-
-	if (speed1 < Pw_Driver_Run_MinSpeed)
-		speed1 = Pw_Driver_Run_MinSpeed;
-
-	if (speed1 > Pw_Set_Run_Speed1)
-		speed1 = Pw_Set_Run_Speed1;
-
-	if (speed2 < Pw_Driver_Run_MinSpeed)
-		speed2 = Pw_Driver_Run_MinSpeed;
-
-	if (speed2 > Pw_Set_Run_Speed2)
-		speed2 = Pw_Set_Run_Speed2;
-
-	if (speed3 < Pw_Driver_Run_MinSpeed)
-		speed3 = Pw_Driver_Run_MinSpeed;
-
-	if (speed3 > Pw_Set_Run_Speed3)
-		speed3 = Pw_Set_Run_Speed3;
-
-	if (speed4 < Pw_Driver_Run_MinSpeed)
-		speed4 = Pw_Driver_Run_MinSpeed;
-
-	if (speed4 > Pw_Set_Run_Speed4)
-		speed4 = Pw_Set_Run_Speed4;
-
-	if (speed5 < Pw_Driver_Run_MinSpeed)
-		speed5 = Pw_Driver_Run_MinSpeed;
-
-	if (speed5 > Pw_Set_Run_Speed5)
-		speed5 = Pw_Set_Run_Speed5;
-
-	if (speed6 < Pw_Driver_Run_MinSpeed)
-		speed6 = Pw_Driver_Run_MinSpeed;
-
-	if (speed6 > Pw_Set_Run_Speed6)
-		speed6 = Pw_Set_Run_Speed6;
-
-	//	tmp_num1=num1;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 12] = tmp_num1 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 13] = (tmp_num1 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 14] = speed1;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 15] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//	tmp_num2=num2;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 16] = tmp_num2 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 17] = (tmp_num2 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 18] = speed2;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 19] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//	tmp_num3=num3;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 20] = tmp_num3 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 21] = (tmp_num3 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 22] = speed3;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 23] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//	tmp_num4=num4;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 24] = tmp_num4 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 25] = (tmp_num4 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 26] = speed4;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 27] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//	tmp_num5=num5;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 28] = tmp_num5 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 29] = (tmp_num5 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 30] = speed5;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 31] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//	tmp_num6=num6;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 32] = tmp_num6 & 0x0000FFFF;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 33] = (tmp_num6 & 0xFFFF0000) >> 16;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 34] = speed6;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 35] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
-
-	//4、以修正后的运行速度，得到每台电机的实际运行时间
-	//		Run_time=abs(tmp_num1)*60000/(PULSE_NUM*speed1)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+15]*Pw_Acc_Delay_Ratio/100;
-	Run_time1 = abs(tmp_num1);
-	Run_time1 = (float)Run_time1 * 60000;
-	Run_time1 = (float)Run_time1 / (PULSE_NUM * speed1);
-	tmp_time1 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 15];
-	tmp_time1 = (float)tmp_time1 * Pw_Acc_Delay_Ratio / 100;
-	Run_time1 = (float)(Run_time1 + tmp_time1); //总运行时间=计算运行时间+加减速时间*比例
-
-	//		Run_time=abs(tmp_num2)*60000/(PULSE_NUM*speed2)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+19]*Pw_Acc_Delay_Ratio/100;
-	Run_time2 = abs(tmp_num2);
-	Run_time2 = (float)Run_time2 * 60000;
-	Run_time2 = (float)Run_time2 / (PULSE_NUM * speed2);
-	tmp_time2 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 19];
-	tmp_time2 = (float)tmp_time2 * Pw_Acc_Delay_Ratio / 100;
-	Run_time2 = (float)(Run_time2 + tmp_time2);
-
-	//		Run_time=abs(tmp_num3)*60000/(PULSE_NUM*speed3)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+23]*Pw_Acc_Delay_Ratio/100;
-	Run_time3 = abs(tmp_num3);
-	Run_time3 = (float)Run_time3 * 60000;
-	Run_time3 = (float)Run_time3 / (PULSE_NUM * speed3);
-	tmp_time3 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 23];
-	tmp_time3 = (float)tmp_time3 * Pw_Acc_Delay_Ratio / 100;
-	Run_time3 = (float)(Run_time3 + tmp_time3);
-
-	//		Run_time=abs(tmp_num4)*60000/(PULSE_NUM*speed4)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+27]*Pw_Acc_Delay_Ratio/100;
-	Run_time4 = abs(tmp_num4);
-	Run_time4 = (float)Run_time4 * 60000;
-	Run_time4 = (float)Run_time4 / (PULSE_NUM * speed4);
-	tmp_time4 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 27];
-	tmp_time4 = (float)tmp_time4 * Pw_Acc_Delay_Ratio / 100;
-	Run_time4 = (float)(Run_time4 + tmp_time4);
-
-	//		Run_time=abs(tmp_num5)*60000/(PULSE_NUM*speed5)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+31]*Pw_Acc_Delay_Ratio/100;
-	Run_time5 = abs(tmp_num5);
-	Run_time5 = (float)Run_time5 * 60000;
-	Run_time5 = (float)Run_time5 / (PULSE_NUM * speed5);
-	tmp_time5 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 31];
-	tmp_time5 = (float)tmp_time5 * Pw_Acc_Delay_Ratio / 100;
-	Run_time5 = (float)(Run_time5 + tmp_time5);
-
-	//		Run_time=abs(tmp_num6)*60000/(PULSE_NUM*speed6)+temp_arr_Cmd2[(Cmd_No2-1)*POS_CMD_SIZE+35]*Pw_Acc_Delay_Ratio/100;
-	Run_time6 = abs(tmp_num6);
-	Run_time6 = (float)Run_time6 * 60000;
-	Run_time6 = (float)Run_time6 / (PULSE_NUM * speed6);
-	tmp_time6 = (float)temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 35];
-	tmp_time6 = (float)tmp_time6 * Pw_Acc_Delay_Ratio / 100;
-	Run_time6 = (float)(Run_time6 + tmp_time6);
-
-	time[0] = Run_time1;
-	time[1] = Run_time2;
-	time[2] = Run_time3;
-	time[3] = Run_time4;
-	time[4] = Run_time5;
-	time[5] = Run_time6;
-
-	sort_f(time, 6); //排序，得到最大运行时间time[5]
-	Run_time = time[5] / 10 + 1;
-	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 36] = (s32)Run_time;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 32] = pulse_num6 & 0x0000FFFF;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 33] = (pulse_num6 & 0xFFFF0000) >> 16;
+	temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 34] = MOTOR_MAX_SPEED456 * Run_Speed_Ratio / 100;
+	// temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 35] = temp_arr_Cmd2[(Cmd_No2 - 1) * POS_CMD_SIZE + 4]; //加减速时间直接复制总的
 }
 
 //运行到某一命令号对应的位置点
@@ -2530,16 +2325,16 @@ void Cal_One_Pos_Speed(s32 Cmd_No1, s32 Cmd_No2)
 void Run_to_One_Pos(s32 Cmd_No)
 {
 	float num1, num2, num3, num4, num5, num6;
-	float tmp1_f, tmp2_f, tmp3_f, tmp4_f, tmp5_f, tmp6_f;
-	//	s16 temp_MUTI1,temp_MUTI2;
+	float tmp_num3, tmp_num4, tmp_num5, tmp_num6;
 	s16 temp_MUTI3, temp_MUTI4, temp_MUTI5, temp_MUTI6;
-	float temp_SINGLE1, temp_SINGLE2, temp_SINGLE3, temp_SINGLE4, temp_SINGLE5, temp_SINGLE6;
 	s32 *tmp_arr_Cmd;
 	s32 *tmp_arr_Pos;
 	s32 Pos_No;
-	s32 speed1, speed2, speed3, speed4, speed5, speed6;
 	s32 acc_dec_time;
-	s32 temp_pulse;
+	u8 dir1, dir2, dir3, dir4, dir5, dir6;
+	s32 pulse_num1, pulse_num2, pulse_num3, pulse_num4, pulse_num5, pulse_num6;
+	u32 pulse_num1_P, pulse_num2_P, pulse_num3_P, pulse_num4_P, pulse_num5_P, pulse_num6_P;
+	signed long long temp_SINGLE1, temp_SINGLE2, temp_SINGLE3, temp_SINGLE4, temp_SINGLE5, temp_SINGLE6;
 
 	Pr_Send_Data_F = 0;
 	tmp_arr_Cmd = &w_ParLst_Pos_CMD;
@@ -2548,130 +2343,182 @@ void Run_to_One_Pos(s32 Cmd_No)
 	if (Cmd_No >= 1 && Cmd_No <= COM_CMD_NUM - 1)
 		Cmd_No--;
 
-	Pos_No = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 2];
+	Pos_No = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_POS_NO];
 	if (Pos_No >= 1 && Pos_No <= POS_NUM)
 		Pos_No--;
 
-	acc_dec_time = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 4];
+	acc_dec_time = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED];
 
+#if (POS_TYPE == 0) //=0表示位置数据类型为编码器数据
 	//计算1#脉冲
+	//目标位置点编码器数据-当前位置点的实时编码器数据
 	//	temp_MUTI1=(tmp_arr_Pos[Pos_No*POS_SIZE+1]-Pr_Drive1_MultiData);
-	temp_SINGLE1 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 3] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 2]) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData));
-	//	num1=temp_MUTI1*PULSE_NUM+temp_SINGLE1*PULSE_NUM/ELEC_GEAR;
-	//	num1=temp_MUTI1;												//分开计算是因为整数相乘超出范围，所以要先转换为浮点数
-	//	num1=num1*PULSE_NUM;
-	tmp1_f = (float)temp_SINGLE1;
-	tmp1_f = (float)tmp1_f * PULSE_NUM;
-	tmp1_f = (float)tmp1_f / ELEC_GEAR_US200;
-	num1 = (float)(tmp1_f);
-
+	temp_SINGLE1 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE1_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE1_LOW]) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData));
+	num1 = (float)temp_SINGLE1;
+	num1 *= PULSE_NUM;
+	num1 /= ELEC_GEAR_US200;
 	if (num1 > 0.0f)
-		temp_pulse = (s32)(num1 + 0.5f);
+		pulse_num1 = (s32)(num1 + 0.5f);
 	else
-		temp_pulse = (s32)(num1 - 0.5f);
-	speed1 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 14];
-	if (temp_pulse != 0 && speed1 != 0)
-		Locate_Rle_1(Pw_EquipmentNo1, temp_pulse, speed1, acc_dec_time, 0);
-	Driver1_Pos_Start_Sort = 1;
+		pulse_num1 = (s32)(num1 - 0.5f);
 
 	//计算2#脉冲
-	//	temp_MUTI2=(tmp_arr_Pos[Pos_No*POS_SIZE+4]-Pr_Drive2_MultiData);
-	temp_SINGLE2 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 6] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 5]) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData));
-	//	num2=temp_MUTI2*PULSE_NUM+temp_SINGLE2*PULSE_NUM/ELEC_GEAR;
-	//	num2=temp_MUTI2;
-	//	num2=num2*PULSE_NUM;
-	tmp2_f = (float)temp_SINGLE2;
-	tmp2_f = (float)tmp2_f * PULSE_NUM;
-	tmp2_f = (float)tmp2_f / ELEC_GEAR_US200;
-	num2 = (float)(tmp2_f);
-
+	temp_SINGLE2 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE2_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE2_LOW]) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData));
+	num2 = (float)temp_SINGLE2;
+	num2 *= PULSE_NUM;
+	num2 /= ELEC_GEAR_US200;
 	if (num2 > 0.0f)
-		temp_pulse = (s32)(num2 + 0.5f);
+		pulse_num2 = (s32)(num2 + 0.5f);
 	else
-		temp_pulse = (s32)(num2 - 0.5f);
-	speed2 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 18];
-	if (temp_pulse != 0 && speed2 != 0)
-		Locate_Rle_1(Pw_EquipmentNo2, temp_pulse, speed2, acc_dec_time, 0);
-	Driver2_Pos_Start_Sort = 1;
+		pulse_num2 = (s32)(num2 - 0.5f);
 
-	//计算1#脉冲
-	temp_MUTI3 = (tmp_arr_Pos[Pos_No * POS_SIZE + 7] - Pr_Drive3_MultiData);
-	temp_SINGLE3 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 9] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 8]) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData));
-	//	num3=temp_MUTI3*PULSE_NUM+temp_SINGLE3*PULSE_NUM/ELEC_GEAR;
+	//计算3#脉冲
+	temp_MUTI3 = (tmp_arr_Pos[Pos_No * POS_SIZE + POS_MULTI3] - Pr_Drive3_MultiData);
+	temp_SINGLE3 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE3_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE3_LOW]) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData));
+	// num3 = temp_MUTI3 * PULSE_NUM + temp_SINGLE3 * PULSE_NUM / ELEC_GEAR;
 	num3 = (float)temp_MUTI3;
-	num3 = (float)num3 * PULSE_NUM;
-	tmp3_f = (float)temp_SINGLE3;
-	tmp3_f = (float)tmp3_f * PULSE_NUM;
-	tmp3_f = (float)tmp3_f / ELEC_GEAR;
-	num3 = (float)(num3 + tmp3_f);
+	num3 *= PULSE_NUM;
+	tmp_num3 = (float)temp_SINGLE3;
+	tmp_num3 *= PULSE_NUM;
+	num3 = (float)(num3 + tmp_num3 / ELEC_GEAR);
 
 	if (num3 > 0.0f)
-		temp_pulse = (s32)(num3 + 0.5f);
+		pulse_num3 = (s32)(num3 + 0.5f);
 	else
-		temp_pulse = (s32)(num3 - 0.5f);
-	speed3 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 22];
-	if (temp_pulse != 0 && speed3 != 0)
-		Locate_Rle_1(Pw_EquipmentNo3, temp_pulse, speed3, acc_dec_time, 0);
-	Driver3_Pos_Start_Sort = 1;
+		pulse_num3 = (s32)(num3 - 0.5f);
 
 	//计算4#脉冲
-	temp_MUTI4 = (tmp_arr_Pos[Pos_No * POS_SIZE + 10] - Pr_Drive4_MultiData);
-	temp_SINGLE4 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 12] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 11]) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData));
-	//	num4=temp_MUTI4*PULSE_NUM+temp_SINGLE4*PULSE_NUM/ELEC_GEAR;
+	temp_MUTI4 = (tmp_arr_Pos[Pos_No * POS_SIZE + POS_MULTI4] - Pr_Drive4_MultiData);
+	temp_SINGLE4 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE4_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE4_LOW]) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData));
+	// num4 = temp_MUTI4 * PULSE_NUM + temp_SINGLE4 * PULSE_NUM / ELEC_GEAR;
 	num4 = (float)temp_MUTI4;
-	num4 = (float)num4 * PULSE_NUM;
-	tmp4_f = (float)temp_SINGLE4;
-	tmp4_f = (float)tmp4_f * PULSE_NUM;
-	tmp4_f = (float)tmp4_f / ELEC_GEAR;
-	num4 = (float)(num4 + tmp4_f);
+	num4 *= PULSE_NUM;
+	tmp_num4 = (float)temp_SINGLE4;
+	tmp_num4 *= PULSE_NUM;
+	num4 = (float)(num4 + tmp_num4 / ELEC_GEAR);
 
 	if (num4 > 0.0f)
-		temp_pulse = (s32)(num4 + 0.5f);
+		pulse_num4 = (s32)(num4 + 0.5f);
 	else
-		temp_pulse = (s32)(num4 - 0.5f);
-	speed4 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 26];
-	if (temp_pulse != 0 && speed4 != 0)
-		Locate_Rle_1(Pw_EquipmentNo4, temp_pulse, speed4, acc_dec_time, 0);
-	Driver4_Pos_Start_Sort = 1;
+		pulse_num4 = (s32)(num4 - 0.5f);
 
 	//计算5#脉冲
-	temp_MUTI5 = (tmp_arr_Pos[Pos_No * POS_SIZE + 13] - Pr_Drive5_MultiData);
-	temp_SINGLE5 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 15] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 14]) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData));
-	//	num5=temp_MUTI5*PULSE_NUM+temp_SINGLE5*PULSE_NUM/ELEC_GEAR;
+	temp_MUTI5 = (tmp_arr_Pos[Pos_No * POS_SIZE + POS_MULTI5] - Pr_Drive5_MultiData);
+	temp_SINGLE5 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE5_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE5_LOW]) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData));
+	// num5 = temp_MUTI5 * PULSE_NUM + temp_SINGLE5 * PULSE_NUM / ELEC_GEAR;
 	num5 = (float)temp_MUTI5;
-	num5 = (float)num5 * PULSE_NUM;
-	tmp5_f = (float)temp_SINGLE5;
-	tmp5_f = (float)tmp5_f * PULSE_NUM;
-	tmp5_f = (float)tmp5_f / ELEC_GEAR;
-	num5 = (float)(num5 + tmp5_f);
-	if (num5 > 0.0f)
-		temp_pulse = (s32)(num5 + 0.5f);
-	else
-		temp_pulse = (s32)(num5 - 0.5f);
-	speed5 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 30];
-	if (temp_pulse != 0 && speed5 != 0)
-		Locate_Rle_1(Pw_EquipmentNo5, temp_pulse, speed5, acc_dec_time, 0);
-	Driver5_Pos_Start_Sort = 1;
+	num5 *= PULSE_NUM;
+	tmp_num5 = (float)temp_SINGLE5;
+	tmp_num5 *= PULSE_NUM;
+	num5 = (float)(num5 + tmp_num5 / ELEC_GEAR);
 
+	if (num5 > 0.0f)
+		pulse_num5 = (s32)(num5 + 0.5f);
+	else
+		pulse_num5 = (s32)(num5 - 0.5f);
 	//计算6#脉冲
-	temp_MUTI6 = (tmp_arr_Pos[Pos_No * POS_SIZE + 16] - Pr_Drive6_MultiData);
-	temp_SINGLE6 = (float)(((tmp_arr_Pos[Pos_No * POS_SIZE + 18] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + 17]) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData));
-	//	num6=temp_MUTI6*PULSE_NUM+temp_SINGLE6*PULSE_NUM/ELEC_GEAR;
+	temp_MUTI6 = (tmp_arr_Pos[Pos_No * POS_SIZE + POS_MULTI6] - Pr_Drive6_MultiData);
+	temp_SINGLE6 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE6_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE6_LOW]) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData));
+	// num6 = temp_MUTI6 * PULSE_NUM + temp_SINGLE6 * PULSE_NUM / ELEC_GEAR;
 	num6 = (float)temp_MUTI6;
-	num6 = (float)num6 * PULSE_NUM;
-	tmp6_f = (float)temp_SINGLE6;
-	tmp6_f = (float)tmp6_f * PULSE_NUM;
-	tmp6_f = (float)tmp6_f / ELEC_GEAR;
-	num6 = (float)(num6 + tmp6_f);
+	num6 *= PULSE_NUM;
+	tmp_num6 = (float)temp_SINGLE6;
+	tmp_num6 *= PULSE_NUM;
+	num6 = (float)(num6 + tmp_num6 / ELEC_GEAR);
 
 	if (num6 > 0.0f)
-		temp_pulse = (s32)(num6 + 0.5f);
+		pulse_num6 = (s32)(num6 + 0.5f);
 	else
-		temp_pulse = (s32)(num6 - 0.5f);
-	speed6 = tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + 34];
-	if (temp_pulse != 0 && speed6 != 0)
-		Locate_Rle_1(Pw_EquipmentNo6, temp_pulse, speed6, acc_dec_time, 0);
-	Driver6_Pos_Start_Sort = 1;
+		pulse_num6 = (s32)(num6 - 0.5f);
+#else
+	pulse_num1 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE1_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE1_LOW]) - ((Pr_Drive1_singleData_HW << 16) + Pr_Drive1_singleData));
+	pulse_num2 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE2_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE2_LOW]) - ((Pr_Drive2_singleData_HW << 16) + Pr_Drive2_singleData));
+	pulse_num3 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE3_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE3_LOW]) - ((Pr_Drive3_singleData_HW << 16) + Pr_Drive3_singleData));
+	pulse_num4 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE4_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE4_LOW]) - ((Pr_Drive4_singleData_HW << 16) + Pr_Drive4_singleData));
+	pulse_num5 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE5_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE5_LOW]) - ((Pr_Drive5_singleData_HW << 16) + Pr_Drive5_singleData));
+	pulse_num6 = (((tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE6_HIGH] << 16) + tmp_arr_Pos[Pos_No * POS_SIZE + POS_SINGLE6_LOW]) - ((Pr_Drive6_singleData_HW << 16) + Pr_Drive6_singleData));
+
+#endif
+
+	if (pulse_num1 >= 0)
+	{
+		dir1 = M1_CLOCKWISE;
+		pulse_num1_P = pulse_num1;
+	}
+	else
+	{
+		dir1 = M1_UNCLOCKWISE;
+		pulse_num1_P = -pulse_num1;
+	}
+
+	if (pulse_num2 >= 0)
+	{
+		dir2 = M2_CLOCKWISE;
+		pulse_num2_P = pulse_num2;
+	}
+	else
+	{
+		dir2 = M2_UNCLOCKWISE;
+		pulse_num2_P = -pulse_num2;
+	}
+
+	if (pulse_num3 >= 0)
+	{
+		dir3 = M3_CLOCKWISE;
+		pulse_num3_P = pulse_num3;
+	}
+	else
+	{
+		dir3 = M3_UNCLOCKWISE;
+		pulse_num3_P = pulse_num3;
+	}
+
+	if (pulse_num4 >= 0)
+	{
+		dir4 = M4_CLOCKWISE;
+		pulse_num4_P = pulse_num4;
+	}
+	else
+	{
+		dir4 = M4_UNCLOCKWISE;
+		pulse_num4_P = -pulse_num4;
+	}
+
+	if (pulse_num5 >= 0)
+	{
+		dir5 = M5_CLOCKWISE;
+		pulse_num5_P = pulse_num5;
+	}
+	else
+	{
+		dir5 = M5_UNCLOCKWISE;
+		pulse_num5_P = -pulse_num5;
+	}
+
+	if (pulse_num6 >= 0)
+	{
+		dir6 = M6_CLOCKWISE;
+		pulse_num6_P = pulse_num6;
+	}
+	else
+	{
+		dir6 = M6_UNCLOCKWISE;
+		pulse_num6_P = -pulse_num6;
+	}
+
+	// HAL_Delay(100);
+	//停止后才能继续发送
+	if (motor1.running == 0 && motor2.running == 0 && motor3.running == 0 &&
+		motor4.running == 0 && motor5.running == 0 && motor6.running == 0)
+	{
+
+		Run_Motors_sync(dir1, pulse_num1_P, Pw_Motor1_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED1], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED1],
+						dir2, pulse_num2_P, Pw_Motor2_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED2], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED2],
+						dir3, pulse_num3_P, Pw_Motor3_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED3], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED3],
+						dir4, pulse_num4_P, Pw_Motor4_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED4], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED4],
+						dir5, pulse_num5_P, Pw_Motor5_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED5], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED5],
+						dir6, pulse_num6_P, Pw_Motor6_StartSpeed, tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_SPEED6], tmp_arr_Cmd[Cmd_No * POS_CMD_SIZE + CMD_ACC_SPEED6]);
+	}
 }
 
 //编码器位置手动调整函数
@@ -2737,22 +2584,24 @@ void Adj_Pos(u8 driver_no, s32 PosErr_Muti, s32 PosErr_Sing)
 	s32 *tmp_arr_Pos;
 	u8 k;
 	s32 tmp_Pos;
-
 	//	driver_no--;
 	tmp_arr_Pos = &w_ParLst_PosPar;
 	for (k = 0; k < POS_NUM - 1; k++)
 	{
 		if (tmp_arr_Pos[k * POS_SIZE] != 0)
 		{
+			//计算单圈
 			tmp_Pos = (tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 3] << 16) + tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 2];
 			tmp_Pos += PosErr_Sing;
 			if (driver_no > 2)
 			{
-				tmp_Pos = tmp_Pos & 0x7FFFFF; //取余，对RA1伺服，单圈最大是8388608
+				tmp_Pos = tmp_Pos & 0x7FFFFF; //取余，对RA1伺服，单圈最大是2^23=8388608
 			}
 			tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 2] = tmp_Pos & 0x0000FFFF;			//单圈低字
 			tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 3] = (tmp_Pos & 0xFFFF0000) >> 16; //单圈高字
-			tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 1] += PosErr_Muti;					//多圈
+
+			//计算多圈
+			tmp_arr_Pos[k * POS_SIZE + (driver_no - 1) * 3 + 1] += PosErr_Muti; //多圈
 		}
 		else
 			break;

@@ -17,6 +17,12 @@
 
 //设置外部铁电存储器FM25CL16的地址分配
 //FM25CL64存储芯片，64Kbit，即8K字节，用于保存设定参数、位置信息及位置运行命令
+/*******
+ * 0-599:—————————用于保存内部参数w_ParLst[300]，300个字，每个参数2个字节，共600个字节
+ * 600-1799:—————————用于保存内部参数w_ParLst_Drive[300]，300个双字，每个参数4个字节，共1200个字节
+ * 1800-2999:—————————用于保存位置数据，15条，每条20个双字，共300个双字，1200个字节
+ * 3000-7799:—————————用于保存位置数据，30条，每条40个双字，共1200个双字，4800个字节
+ */
 #define PAR_SIZE_ALL 8192 //参数区总大小
 #define PAR1_SIZE 300     // NV参数数量
 
@@ -28,9 +34,9 @@
 //位置参数起始地址
 #define FM_POS_ADDR FM_FLASH_PAR2_ADDR + PAR2_SIZE * sizeof(w_ParLst_DrivePar) //结果=600+300*4=1800
 
-#define POS_SIZE 20 //每个数据点的长度，序号+6个多圈+12个单圈编码器值+标志
-#define POS_NUM 15  //定义数据点的数量，15个
-#define FLASH_POS_SIZE POS_SIZE *POS_NUM
+#define POS_SIZE 20                      //每个数据点的长度，序号+6个多圈+12个单圈编码器值+标志
+#define POS_NUM 15                       //定义数据点的数量，15个
+#define FLASH_POS_SIZE POS_SIZE *POS_NUM //20*15
 //位置命令起始地址
 #define FM_POS_CMD_ADDR FM_POS_ADDR + FLASH_POS_SIZE * sizeof(w_ParLst_DrivePar) //结果=1800+300*4=3000
 
@@ -41,7 +47,7 @@
 #define COM_CMD_SIZE 20 //命令指令长度
 #define COM_CMD_NUM 30  //命令指令数量
 
-#define PULSE_NUM 5000         //电机每旋转一圈的脉冲数
+#define PULSE_NUM 1000         //电机每旋转一圈的脉冲数
 #define ELEC_GEAR 8388608      //电子齿轮2^23=8388608
 #define ELEC_GEAR_US200 131072 //电子齿轮2^17=131072
 
@@ -51,6 +57,25 @@
 //3#多圈(7)+3#单圈_低(8)+3#单圈_高(9)+4#多圈(10)+4#单圈_低(11)+4#单圈_高(12)+
 //5#多圈(13)+5#单圈_低(14)+5#单圈_高(15)+6#多圈(16)+6#单圈_低(17)+6#单圈_高(18)
 #define w_ParLst_PosPar w_ParLst_Drive[PAR2_SIZE]
+#define POS_POS_NO 0
+#define POS_MULTI1 1
+#define POS_SINGLE1_LOW 2
+#define POS_SINGLE1_HIGH 3
+#define POS_MULTI2 4
+#define POS_SINGLE2_LOW 5
+#define POS_SINGLE2_HIGH 6
+#define POS_MULTI3 7
+#define POS_SINGLE3_LOW 8
+#define POS_SINGLE3_HIGH 9
+#define POS_MULTI4 10
+#define POS_SINGLE4_LOW 11
+#define POS_SINGLE4_HIGH 12
+#define POS_MULTI5 13
+#define POS_SINGLE5_LOW 14
+#define POS_SINGLE5_HIGH 15
+#define POS_MULTI6 16
+#define POS_SINGLE6_LOW 17
+#define POS_SINGLE6_HIGH 18
 
 //40*30=1200个双字
 //组号(0)+命令号(1)+位置号(2)+运行速度(3)+加减速时间(4)+暂停(5)+停止(6)+条件1(7)+条件2(8)+DO延时(9)+DO输出持续时间(10)+输出(11)
@@ -58,7 +83,43 @@
 //+3#脉冲_低(20)+3#脉冲_高(21)+3#速度(22)+3#加减速(23)+4#脉冲_低(24)+4#脉冲_高(25)+4#速度(26)+4#加减速(27)
 //+5#脉冲_低(28)+5#脉冲_高(29)+5#速度(30)+5#加减速(31)+6#脉冲_低(32)+6#脉冲_高(33)+6#速度(34)+6#加减速(35)
 #define w_ParLst_Pos_CMD w_ParLst_Drive[PAR2_SIZE + FLASH_POS_SIZE]
-
+#define CMD_GROUP_NO 0
+#define CMD_CMD_NO 1
+#define CMD_POS_NO 2
+#define CMD_RUN_SPEED_RATIO 3
+#define CMD_ACC_SPEED 4
+#define CMD_PAUSE_TIME 5
+#define CMD_HALT_TIME 6
+#define CMD_CONDITION1 7
+#define CMD_CONDITION2 8
+#define CMD_DO_DELAY 9
+#define CMD_DO_TIME 10
+#define CMD_DO_OUT 11
+#define CMD_PULSE1_LOW 12
+#define CMD_PULSE1_HIGH 13
+#define CMD_SPEED1 14
+#define CMD_ACC_SPEED1 15
+#define CMD_PULSE2_LOW 16
+#define CMD_PULSE2_HIGH 17
+#define CMD_SPEED2 18
+#define CMD_ACC_SPEED2 19
+#define CMD_PULSE3_LOW 20
+#define CMD_PULSE3_HIGH 21
+#define CMD_SPEED3 22
+#define CMD_ACC_SPEED3 23
+#define CMD_PULSE4_LOW 24
+#define CMD_PULSE4_HIGH 25
+#define CMD_SPEED4 26
+#define CMD_ACC_SPEED4 27
+#define CMD_PULSE5_LOW 28
+#define CMD_PULSE5_HIGH 29
+#define CMD_SPEED5 30
+#define CMD_ACC_SPEED5 31
+#define CMD_PULSE6_LOW 32
+#define CMD_PULSE6_HIGH 33
+#define CMD_SPEED6 34
+#define CMD_ACC_SPEED6 35
+#define CMD_RUN_TIME 36 //定义运行时间，在命令指令中是位置36
 //最后一条命令
 #define w_ParLst_LastPos_CMD w_ParLst_Drive[PAR2_SIZE + FLASH_POS_SIZE + FLASH_POS_CMD_SIZE - POS_CMD_SIZE]
 
@@ -72,6 +133,13 @@
 #define FLASH_SAVE_POS_CMD3 0X00040000
 #define FLASH_SAVE_POS_CMD4 0X00050000
 #define FLASH_SAVE_POS_CMD5 0X00060000
+
+//内部Flash保存地址
+//最后一个扇区，128K
+#define InFLASH_SAVE_ADDR0 0x080E0000                                                            //参数区1保存在外边FLASH的起始地址
+#define InFLASH_SAVE_ADDR1 InFLASH_SAVE_ADDR0 + PAR1_SIZE * sizeof(w_ParLst[0])                  //参数区2，结果=0x080E0000 +300*2=0x080E0000 +600
+#define InFLASH_SAVE_POSTION1 InFLASH_SAVE_ADDR1 + PAR2_SIZE * sizeof(w_ParLst_DrivePar)         //位置数据，结果=0x080E0000 +600+300*4=0x080E0000+1800
+#define InFLASH_SAVE_POS_CMD1 InFLASH_SAVE_POSTION1 + FLASH_POS_SIZE * sizeof(w_ParLst_DrivePar) //同步联动指令，结果=0x080E0000 +1800+300*4=3000
 
 #define SECTORWORDNUM 256       // 扇区字数量
 #define FLASH_ID_SIZE 128       // ID参数数量
@@ -117,22 +185,23 @@
 //把该地址转换成一个指针
 #define MEM_ADDR(addr) *((volatile unsigned long *)(addr))
 #define BIT_ADDR(addr, bitnum) MEM_ADDR(BITBAND(addr, bitnum))
-//IO口地址映射
-#define GPIOA_ODR_Addr (GPIOA_BASE + 12) //0x4001080C
-#define GPIOB_ODR_Addr (GPIOB_BASE + 12) //0x40010C0C
-#define GPIOC_ODR_Addr (GPIOC_BASE + 12) //0x4001100C
-#define GPIOD_ODR_Addr (GPIOD_BASE + 12) //0x4001140C
-#define GPIOE_ODR_Addr (GPIOE_BASE + 12) //0x4001180C
-#define GPIOF_ODR_Addr (GPIOF_BASE + 12) //0x40011A0C
-#define GPIOG_ODR_Addr (GPIOG_BASE + 12) //0x40011E0C
 
-#define GPIOA_IDR_Addr (GPIOA_BASE + 8) //0x40010808
-#define GPIOB_IDR_Addr (GPIOB_BASE + 8) //0x40010C08
-#define GPIOC_IDR_Addr (GPIOC_BASE + 8) //0x40011008
-#define GPIOD_IDR_Addr (GPIOD_BASE + 8) //0x40011408
-#define GPIOE_IDR_Addr (GPIOE_BASE + 8) //0x40011808
-#define GPIOF_IDR_Addr (GPIOF_BASE + 8) //0x40011A08
-#define GPIOG_IDR_Addr (GPIOG_BASE + 8) //0x40011E08
+//STM32F407 IO address mapping by value
+#define GPIOA_ODR_Addr (GPIOA_BASE + 20) //0x4001080C
+#define GPIOB_ODR_Addr (GPIOB_BASE + 20) //0x40010C0C
+#define GPIOC_ODR_Addr (GPIOC_BASE + 20) //0x4001100C
+#define GPIOD_ODR_Addr (GPIOD_BASE + 20) //0x4001140C
+#define GPIOE_ODR_Addr (GPIOE_BASE + 20) //0x4001180C
+#define GPIOF_ODR_Addr (GPIOF_BASE + 20) //0x40011A0C
+#define GPIOG_ODR_Addr (GPIOG_BASE + 20) //0x40011E0C
+
+#define GPIOA_IDR_Addr (GPIOA_BASE + 16) //0x40010808
+#define GPIOB_IDR_Addr (GPIOB_BASE + 16) //0x40010C08
+#define GPIOC_IDR_Addr (GPIOC_BASE + 16) //0x40011008
+#define GPIOD_IDR_Addr (GPIOD_BASE + 16) //0x40011408
+#define GPIOE_IDR_Addr (GPIOE_BASE + 16) //0x40011808
+#define GPIOF_IDR_Addr (GPIOF_BASE + 16) //0x40011A08
+#define GPIOG_IDR_Addr (GPIOG_BASE + 16) //0x40011E08
 
 //IO口操作,只对单一的IO口!
 //确保n的值小于16!
@@ -157,34 +226,85 @@
 #define PGout(n) BIT_ADDR(GPIOG_ODR_Addr, n) //输出
 #define PGin(n) BIT_ADDR(GPIOG_IDR_Addr, n)  //输入
 
-#define COM1_DATA PDout(8)  //=1,灭；=0,亮	就是：Data 指示灯 ！！！
-#define COM0_DATA PDout(15) //=1,灭；=0,亮
-
-//#define		COM0_TX				PDout(9)		//经过测试，COM1_LED输出模式，输出状态不能读取
-#define COM0_RX PDin(10) //状态输入脚
-//#define		COM1_TX				PDout(10)		//经过测试，COM1_LED输出模式，输出状态不能读取
-#define COM1_RX PDin(11) //状态输入脚
-
 /* BSP硬件定义  */
 //----------------------------------------------------------------
 
 //开关量输入
-//DI1 -- PC8		//DI2 -- PC7		//DI3 -- PA8		DI4 -- PC9
-#define DI1 PCin(8) // 2016.2.1
-#define DI2 PCin(7) //
-#define DI3 PAin(8) //
-#define DI4 PCin(9) //
+#define DI1 PDin(10)  //
+#define DI2 PDin(11)  //
+#define DI3 PDin(12)  //
+#define DI4 PDin(13)  //
+#define DI5 PFin(3)   //
+#define DI6 PFin(2)   //
+#define DI7 PFin(1)   //
+#define DI8 PFin(0)   //
+#define DI9 PEin(6)   //
+#define DI10 PEin(4)  //
+#define DI11 PEin(3)  //
+#define DI12 PEin(2)  //
+#define DI13 PGin(12) //
+#define DI14 PGin(11) //
+#define DI15 PGin(10) //
+#define DI16 PDin(7)  //
+#define DI17 PCin(4)  //
+#define DI18 PCin(5)  //
+#define DI19 PBin(0)  //
+#define DI20 PFin(11) //
+#define DI21 PEin(7)  //
+#define DI22 PEin(8)  //
+#define DI23 PEin(10) //
+#define DI24 PEin(11) //
+#define DI25 PEin(12) //
+#define DI26 PEin(13) //
+#define DI27 PEin(14) //
+#define DI28 PEin(15) //
 
 //继电器输出			在DSP上，通过输出DO1，DO2可以间接控制继电器 2015.5.10 必须DSP复位等都正常后
 #define DO1 PAout(8) // =1 OPEN; =0 CLOSE
 #define DO2 PCout(9) // =1 OPEN; =0 CLOSE
 #define DO3 PCout(8) // =1 OPEN; =0 CLOSE
-#define DO4 PCout(7) // =1 OPEN; =0 CLOSE
+#define DO4 PCout(7)
+#define DO5 PEout(1)
+#define DO6 PEout(0)
+#define DO7 PBout(9)
+#define DO8 PBout(8)
+#define DO9 PBout(7)
+#define DO10 PFout(4)
+#define DO11 PGout(5)
+#define DO12 PGout(4)
+#define DO13 PGout(3)
+#define DO14 PFout(12)
+#define DO15 PFout(13)
+#define DO16 PFout(14)
+#define DO17 PFout(15)
+#define DO18 PGout(0)
+#define DO19 PGout(1)
+#define DO20 PDout(14)
+#define DO21 PDout(15)
+#define DO22 PGout(2)
 
 #define DO1_IN PAin(8)
 #define DO2_IN PCin(9)
 #define DO3_IN PCin(8)
 #define DO4_IN PCin(7)
+#define DO5_IN PEin(1)
+#define DO6_IN PEin(0)
+#define DO7_IN PBin(9)
+#define DO8_IN PBin(8)
+#define DO9_IN PBin(7)
+#define DO10_IN PFin(4)
+#define DO11_IN PGin(5)
+#define DO12_IN PGin(4)
+#define DO13_IN PGin(3)
+#define DO14_IN PFin(12)
+#define DO15_IN PFin(13)
+#define DO16_IN PFin(14)
+#define DO17_IN PFin(15)
+#define DO18_IN PGin(0)
+#define DO19_IN PGin(1)
+#define DO20_IN PDin(14)
+#define DO21_IN PDin(15)
+#define DO22_IN PGin(2)
 
 #define STOP_BRAKE_SYSTEM HAL_GPIO_WritePin(GPIOA, DO1_Pin, GPIO_PIN_RESET) //停止刹车，允许运行
 #define START_BRAKE_SYSTEM HAL_GPIO_WritePin(GPIOA, DO1_Pin, GPIO_PIN_SET)  //开始刹车，不允许运行
@@ -194,7 +314,9 @@
 #define CLOSE_HAND HAL_GPIO_WritePin(GPIOC, DO2_Pin, GPIO_PIN_SET)  //闭合机械手臂
 #define HAND_STATUS PCin(9)                                         //0打开电磁阀；1关闭电磁阀
 
-#define TIME_TEST_DEBUG 0 //测量函数运行时间的调试开关
+#define TIME_TEST_DEBUG 0 //测量函数运行时间的调试开关,=1可以print函数运行时间
+#define exFLASH_EXIST 0   //外部FLASH是否存在开关,=1表示存在外部FLASH芯片;=1表示无外部FLASH，需保存在内部FLASH中
+#define POS_TYPE 1        //=0表示位置数据类型为编码器数据;=1表示位置数据类型为脉冲值
 
 #define MOTOR1_AA_VALUE ((Motor1_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor1_XiShu_1 * M_T_AA * M_T_RA) * 60) //=14*60=840
 #define MOTOR2_AA_VALUE ((Motor2_XiShu_1 * M_T_AA * M_T_AA + M_T_AA * M_T_UA + Motor2_XiShu_1 * M_T_AA * M_T_RA) * 60)
@@ -206,10 +328,10 @@
 #define DI_STABLE_NUM 20 // 开关量稳定数目
 
 //电机同步参数
-#define TIME_COST_DELTA 32 * 4 //要调整的电机运行时间与最长运行时间的偏差值
-#define FRE_AA_DELTA 10        //加加速度偏差值
-#define FRE_AA_MIN 10          //最小加加速度
-#define FRE_START_DELTA 10     //起始频率偏差值
+#define TIME_COST_DELTA 32 * 20 //要调整的电机运行时间与最长运行时间的偏差值
+#define FRE_AA_DELTA 1          //加加速度偏差值
+#define FRE_AA_MIN 1            //最小加加速度
+#define FRE_START_DELTA 0.1     //起始频率偏差值
 
 // 定义设定参数
 #define Pw_Motor1SendPulse w_ParLst[0]    // 电机1发送脉冲数
@@ -281,6 +403,7 @@
 #define Pw_SetYear w_ParLst[75]   // 设置年
 #define Pw_SetWeek w_ParLst[76]   // 设置星期
 
+#define Pw_DIStableSetNum w_ParLst[115]       // 开关量稳定数目
 #define Pr_Driver1_Control_OK_F w_ParLst[116] //1#伺服控制命令OK标志
 #define Pr_Driver2_Control_OK_F w_ParLst[117] //2#伺服控制命令OK标志
 #define Pr_Driver3_Control_OK_F w_ParLst[118] //3#伺服控制命令OK标志
@@ -355,7 +478,6 @@
 #define MOTOR_MAX_SPEED12 1500  //1#、2#电机最大转速1500r/min
 #define MOTOR_MAX_SPEED3 2000   //3#电机最大转速2000r/min
 #define MOTOR_MAX_SPEED456 3000 //3#电机最大转速3000r/min
-#define D_RUN_TIME 36           //定义运行时间，在命令指令中是位置36
 
 // 定义设定参数
 #define Pw_Driver1_Pluse w_ParLst_Drive[0]     //1#手动运行脉冲（低字）
@@ -385,23 +507,29 @@
 #define Pw_Driver5_R_Enable w_ParLst_Drive[25] //5#手动运行使能（反转）
 #define Pw_Driver6_R_Enable w_ParLst_Drive[26] //6#手动运行使能（反转）
 
-#define Pw_Driver1_Speed w_ParLst_Drive[27]   //1#手动运行速度
-#define Pw_Driver1_AccTime w_ParLst_Drive[28] //1#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver1_Speed w_ParLst_Drive[27]      //1#手动运行速度
+#define Pw_Driver1_AccTime w_ParLst_Drive[28]    //1#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver1_StartSpeed w_ParLst_Drive[29] //1#手动起始运行速度
 
-#define Pw_Driver2_Speed w_ParLst_Drive[30]   //2#手动运行速度
-#define Pw_Driver2_AccTime w_ParLst_Drive[31] //2#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver2_Speed w_ParLst_Drive[30]      //2#手动运行速度
+#define Pw_Driver2_AccTime w_ParLst_Drive[31]    //2#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver2_StartSpeed w_ParLst_Drive[32] //2#手动起始运行速度
 
-#define Pw_Driver3_Speed w_ParLst_Drive[33]   //3#手动运行速度
-#define Pw_Driver3_AccTime w_ParLst_Drive[34] //3#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver3_Speed w_ParLst_Drive[33]      //3#手动运行速度
+#define Pw_Driver3_AccTime w_ParLst_Drive[34]    //3#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver3_StartSpeed w_ParLst_Drive[35] //3#手动起始运行速度
 
-#define Pw_Driver4_Speed w_ParLst_Drive[36]   //4#手动运行速度
-#define Pw_Driver4_AccTime w_ParLst_Drive[37] //4#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver4_Speed w_ParLst_Drive[36]      //4#手动运行速度
+#define Pw_Driver4_AccTime w_ParLst_Drive[37]    //4#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver4_StartSpeed w_ParLst_Drive[38] //4#手动起始运行速度
 
-#define Pw_Driver5_Speed w_ParLst_Drive[39]   //5#手动运行速度
-#define Pw_Driver5_AccTime w_ParLst_Drive[40] //5#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver5_Speed w_ParLst_Drive[39]      //5#手动运行速度
+#define Pw_Driver5_AccTime w_ParLst_Drive[40]    //5#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver5_StartSpeed w_ParLst_Drive[41] //5#手动起始运行速度
 
-#define Pw_Driver6_Speed w_ParLst_Drive[42]   //6#手动运行速度
-#define Pw_Driver6_AccTime w_ParLst_Drive[43] //6#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver6_Speed w_ParLst_Drive[42]      //6#手动运行速度
+#define Pw_Driver6_AccTime w_ParLst_Drive[43]    //6#手动加减速：小，加减速慢；大，加减速快
+#define Pw_Driver6_StartSpeed w_ParLst_Drive[20] //6#手动起始运行速度
 
 #define Pw_Driver1_Enable w_ParLst_Drive[44] //1#手动运行使能（正转）
 #define Pw_Driver2_Enable w_ParLst_Drive[45] //2#手动运行使能（正转）

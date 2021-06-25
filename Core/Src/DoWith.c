@@ -69,11 +69,13 @@ uint8_t F_KglOutPrompt;
 uint16_t C_SaveDelay;
 uint8_t T_SaveDelay;
 
+uint16_t w_DIStableCounter_x[30]; // 开关量输入稳定记数器
+uint8_t B_DI_x[30];
+
 uint16_t w_DI1StableCounter; // 开关量输入稳定记数器
 uint16_t w_DI2StableCounter; // 开关量输入稳定记数器
 uint16_t w_DI3StableCounter; // 开关量输入稳定记数器
 uint16_t w_DI4StableCounter; // 开关量输入稳定记数器
-
 uint8_t B_DI1;
 uint8_t B_DI2;
 uint8_t B_DI3;
@@ -82,6 +84,8 @@ uint8_t B_DI4;
 uint8_t Old_Run_Mode;		  //保存原来的运行模式
 uint8_t Old_Pos_Group_Select; //保存原来的组号
 uint8_t Old_K_StopRun;
+uint8_t Old_K_StartPonit;
+uint8_t Old_K_SecondPonit;
 
 //
 extern uint8_t F_Com2SendNext;		  // 软串口发送下一条标志
@@ -175,7 +179,9 @@ extern uint8_t Driver4_Write_Sort;
 extern uint8_t Driver5_Write_Sort;
 extern uint8_t Driver6_Write_Sort;
 
-extern uint8_t K_StopRun; // 启动停止
+extern uint8_t K_StopRun;	  // 启动停止
+extern uint8_t K_StartPoint;  // 原点开关
+extern uint8_t K_SecondPonit; // 第二点开关
 
 extern uint8_t F_Driver1_notBrake; //1#伺服刹车信号
 extern uint8_t F_Driver2_notBrake;
@@ -186,6 +192,8 @@ extern uint8_t F_Driver6_notBrake;
 extern uint8_t F_Driver_All_notBrake;
 
 extern uint8_t Old_K_StopRun;
+extern uint8_t Old_K_StartPonit;
+extern uint8_t Old_K_SecondPonit;
 
 //-----------------------------------------------------------------------------------
 //EXTERN Global VARIABLES - Bit VARIABLES   外部变量、位变量申明
@@ -215,31 +223,31 @@ void ParLst_Init_Pos2Zero(void);
 uc16 w_ParBootLst[PAR1_SIZE] = {
 	10000, 0, 360, 500, 10000,	   // 0-4		0=电机1发送脉冲数,1=电机1发送脉冲数高字,2=电机1转动角度
 								   //			3=电机1加速度 ,4=电机1加加速度
-	200, 6, 10000, 0, 0,		   // 5-9		5=电机1设定速度(rpm),6=电机1起始速度(rpm)
+	200, 6, 1000, 0, 0,			   // 5-9		5=电机1设定速度(rpm),6=电机1起始速度(rpm)
 								   //			7=电机1每圈脉冲数 8= 	9=修改参数
 	0, 0, 0, 0, 0,				   // 10-14	10=  11=  12=
 								   //			13=  14=
 	10000, 0, 360, 500, 10000,	   // 15-19	15=电机2发送脉冲数,16=电机2发送脉冲数高字,17=电机2转动角度
 								   //			18=电机2加速度 ,19=电机2加加速度
-	200, 60, 10000, 0, 0,		   // 20-24	20=电机2设定速度(rpm),21=电机2起始速度(rpm)
+	200, 60, 1000, 0, 0,		   // 20-24	20=电机2设定速度(rpm),21=电机2起始速度(rpm)
 								   //			22=电机2每圈脉冲数 23= 	24=
 	10000, 0, 360, 500, 10000,	   // 25-29	25=电机3发送脉冲数,26=电机3发送脉冲数高字,27=电机3转动角度
 								   //			28=电机3加速度 ,29=电机3加加速度
-	200, 60, 10000, 0, 0,		   // 30-34	30=电机3设定速度(rpm),31=电机3起始速度(rpm)
+	200, 60, 1000, 0, 0,		   // 30-34	30=电机3设定速度(rpm),31=电机3起始速度(rpm)
 								   //			32=电机3每圈脉冲数 33= 	34=
 	10000, 0, 360, 500, 10000,	   // 35-39	35=电机4发送脉冲数,36=电机4发送脉冲数高字,37=电机4转动角度
 								   //			38=电机4加速度 ,39=电机4加加速度
-	200, 60, 10000, 0, 0,		   // 40-44	40=电机4设定速度(rpm),41=电机4起始速度(rpm)
+	200, 60, 1000, 0, 0,		   // 40-44	40=电机4设定速度(rpm),41=电机4起始速度(rpm)
 								   //			42=电机4每圈脉冲数 43= 	44=
 	10000, 0, 360, 500, 10000,	   // 45-49	45=电机5发送脉冲数,46=电机5发送脉冲数高字,47=电机5转动角度
 								   //			48=电机5加速度 ,49=电机5加加速度
-	200, 60, 10000, 0, 0,		   // 50-54	50=电机5设定速度(rpm),51=电机5起始速度(rpm)
+	200, 60, 1000, 0, 0,		   // 50-54	50=电机5设定速度(rpm),51=电机5起始速度(rpm)
 								   //			52=电机5每圈脉冲数 53= 	54=
 	10000, 0, 360, 500, 10000,	   // 55-59	55=电机6发送脉冲数,56=电机6发送脉冲数高字,57=电机6转动角度
 								   //			58=电机6加速度 ,59=电机6加加速度
-	200, 60, 10000, 0, 0,		   // 60-64	60=电机6设定速度(rpm),61=电机6起始速度(rpm)
+	200, 60, 1000, 0, 0,		   // 60-64	60=电机6设定速度(rpm),61=电机6起始速度(rpm)
 								   //			62=电机6每圈脉冲数 63= 	64=
-	0x5A, 0, 1, 0, 0,			   // 65-69	65=初始化标志，=0x5A，表示已经初始化 66=参数初始化命令  67=联动位置控制命令组选择（1-5组）
+	0x5A, 0, 1, 0, 1,			   // 65-69	65=初始化标志，=0x5A，表示已经初始化 66=参数初始化命令  67=联动位置控制命令组选择（1-5组）
 								   //			68=读取FRAM起始地址 69=读取FRAM数据长度
 	0, 0, 0, 0, 0,				   // 70-74	70=  71=  72=
 								   //			73=  74=
@@ -458,12 +466,13 @@ void ParLst_Init(void)
 	uint32_t StartTime = HAL_GetTick();
 	printf("ParLst_Init function begin...\r\n");
 #endif
+
+#if (exFLASH_EXIST == 1)
 	//从铁电存储器FM25L16中读出设定参数
 	B_SelCS = CS_FMRAM1;
 	SPI_FMRAM_BufferRead((uint8_t *)(&w_ParLst[0]), FM_FLASH_PAR1_ADDR, PAR1_SIZE * sizeof(w_ParLst[0])); // 从FMRAM的地址0开始读出设定参数，300个字
 
 	//从FLASH ROM中读取保存的参数，写到w_ParLst_Drive中，方向：——>
-	//	STMFLASH_Read(FLASH_SAVE_ADDR0,(uint32_t*)&w_ParLst_Drive,PAR2_SIZE);
 	SPI_FMRAM_BufferRead((uint8_t *)(&w_ParLst_Drive[0]), FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0])); //
 
 	//读取位置信息
@@ -471,6 +480,19 @@ void ParLst_Init(void)
 
 	//读取位置控制命令
 	SPI_FMRAM_BufferRead((uint8_t *)&w_ParLst_Pos_CMD, FM_POS_CMD_ADDR, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+#else
+	//从铁电存储器FM25L16中读出设定参数
+	STMFLASH_Read(InFLASH_SAVE_ADDR0, (uint32_t *)&w_ParLst, PAR1_SIZE >> 1);
+
+	//从FLASH ROM中读取保存的参数，写到w_ParLst_Drive中，方向：——>
+	STMFLASH_Read(InFLASH_SAVE_ADDR1, (uint32_t *)&w_ParLst_Drive, PAR2_SIZE);
+
+	//读取位置信息
+	STMFLASH_Read(InFLASH_SAVE_POSTION1, (uint32_t *)&w_ParLst_PosPar, FLASH_POS_SIZE);
+
+	//读取位置控制命令
+	STMFLASH_Read(InFLASH_SAVE_POS_CMD1, (uint32_t *)&w_ParLst_Pos_CMD, FLASH_POS_CMD_SIZE);
+#endif
 
 	Flash_Busy_F = 0;
 #if (TIME_TEST_DEBUG == 1)
@@ -566,12 +588,32 @@ void Boot_ParLst(void) // 恢复设定参数为出厂值
 
 		ParArrayRead_Word((uint32_t *)&w_ParLst_Drive, (uint32_t *)w_ParBootLst_Drive, PAR2_SIZE); // 读出初始化参数,300个双字
 
+		//RAM<——程序数组，初始化位置，清零
+		ParArrayRead_Word((uint32_t *)&w_ParLst_PosPar, (uint32_t *)Pos_Init, FLASH_POS_SIZE);
+		//RAM<——程序数组，初始化位置，清零
+		ParArrayRead_Word((uint32_t *)&w_ParLst_Pos_CMD, (uint32_t *)Pos_Cmd_Group1, FLASH_POS_CMD_SIZE);
+
 		//初始化驱动参数，并保存在FLASH中
+#if (exFLASH_EXIST == 1)
 		//铁电FLASH<——程序数组
 		// W25QXX_Write_WithErase((uint32_t *)w_ParBootLst_Drive, FLASH_SAVE_ADDR0, PAR2_SIZE); //把程序数组中的值写入到FLASH中
 		B_SelCS = CS_FMRAM1;
 		SPI_FMRAM_BufferWrite((uint8_t *)w_ParBootLst, FM_FLASH_PAR1_ADDR, PAR1_SIZE * sizeof(w_ParLst[0]));
 		SPI_FMRAM_BufferWrite((uint8_t *)w_ParBootLst_Drive, FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0]));
+#else
+		//清除当前扇区数据
+		MEM_If_Erase_FS(InFLASH_SAVE_ADDR0);
+		//写入，方向：——>
+		MEM_If_Write_FS((uint8_t *)(w_ParLst), (uint8_t *)InFLASH_SAVE_ADDR0, PAR1_SIZE * sizeof(w_ParLst[0]));				//把数组变量的值保存到FLASH中
+		MEM_If_Write_FS((uint8_t *)(w_ParLst_Drive), (uint8_t *)InFLASH_SAVE_ADDR1, PAR2_SIZE * sizeof(w_ParLst_Drive[0])); //把数组变量的值保存到FLASH中
+
+		//保存位置信息
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_PosPar), (uint8_t *)InFLASH_SAVE_POSTION1, FLASH_POS_SIZE * sizeof(w_ParLst_Drive[0]));
+		//保存位置指令
+		//将w_ParLst_Pos_CMD保存到FLASH_SAVE_POS_CMD1中
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_Pos_CMD), (uint8_t *)InFLASH_SAVE_POS_CMD1, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+		MEM_If_DeInit_FS();
+#endif
 
 #if (TIME_TEST_DEBUG == 1)
 		//读取并显示FRAM数据
@@ -620,8 +662,8 @@ void PosCMD_ReadFrom_exFLASH(void)
 {
 	if (Pw_ModPar == 2000 && Pw_ParInitial == 4000)
 	{
+#if (exFLASH_EXIST == 1)
 		Flash_Busy_F = 1;
-
 		//限制命令组号
 		if (Pos_Group_Select > 5 || Pos_Group_Select < 1)
 			Pos_Group_Select = 1;
@@ -639,6 +681,7 @@ void PosCMD_ReadFrom_exFLASH(void)
 		Pw_ModPar = 0;
 		Pw_ParInitial = 0;
 		Flash_Busy_F = 0;
+#endif
 	}
 }
 
@@ -647,10 +690,11 @@ void PosCMD_ReadFrom_exFLASH(void)
  * 功能：将RAM中的位置命令保存到FRAM和外部FLASH
  * 命令：Pw_ModPar == 2000，Pw_ParInitial == 8000
  */
-void PosCMD_SaveTo_FLASH(void)
+void PosCMD_SaveTo_exFLASH(void)
 {
 	if (Pw_ModPar == 2000 && Pw_ParInitial == 8000)
 	{
+#if (exFLASH_EXIST == 1)
 		Flash_Busy_F = 1;
 
 		//限制命令组号
@@ -668,6 +712,7 @@ void PosCMD_SaveTo_FLASH(void)
 		Pw_ModPar = 0;
 		Pw_ParInitial = 0;
 		Flash_Busy_F = 0;
+#endif
 	}
 }
 
@@ -683,10 +728,11 @@ void ParLst_Init_Group2Zero(void)
 		Flash_Busy_F = 1;
 
 		//清零位置
+#if (exFLASH_EXIST == 1)
 		//程序数组——>FRAM FLASH
 		B_SelCS = CS_FMRAM1;
 		SPI_FMRAM_BufferWrite((uint8_t *)Pos_Cmd_Group1, FM_POS_CMD_ADDR, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_DrivePar));
-
+#endif
 		//RAM<——程序数组，初始化位置，清零
 		ParArrayRead_Word((uint32_t *)&w_ParLst_Pos_CMD, (uint32_t *)Pos_Cmd_Group1, FLASH_POS_CMD_SIZE);
 
@@ -708,10 +754,11 @@ void ParLst_Init_Pos2Zero(void)
 		Flash_Busy_F = 1;
 
 		//清零位置
+#if (exFLASH_EXIST == 1)
 		//程序数组——>FRAM FLASH
 		B_SelCS = CS_FMRAM1;
 		SPI_FMRAM_BufferWrite((uint8_t *)Pos_Init, FM_POS_ADDR, FLASH_POS_SIZE * sizeof(w_ParLst_DrivePar));
-
+#endif
 		//RAM<——程序数组，初始化位置，清零
 		ParArrayRead_Word((uint32_t *)&w_ParLst_PosPar, (uint32_t *)Pos_Init, FLASH_POS_SIZE);
 
@@ -726,51 +773,66 @@ void SavePar_Prompt(void) // 保存参数+状态提示
 	if (B_ForceSavPar == 1 && S_SavePar == 0) // 强制保存参数
 	{
 		Pw_ModPar = 0; // 防止把 Pw_ModPar==5000 保存到FMRAM
+#if (exFLASH_EXIST == 1)
 		B_SelCS = CS_FMRAM1;
 		SPI_FMRAM_BufferWrite((uint8_t *)(&w_ParLst[0]), FM_FLASH_PAR1_ADDR, PAR1_SIZE * sizeof(w_ParLst[0]));
-		SPI_FMRAM_BufferWrite((uint8_t *)w_ParLst_Drive[0], FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0]));
+		SPI_FMRAM_BufferWrite((uint8_t *)(&w_ParLst_Drive), FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0]));
+		//保存位置信息
+		SPI_FMRAM_BufferWrite((uint8_t *)&w_ParLst_PosPar, FM_POS_ADDR, FLASH_POS_SIZE * sizeof(w_ParLst_Drive[0]));
+
+		//保存位置控制命令
+		SPI_FMRAM_BufferWrite((uint8_t *)&w_ParLst_Pos_CMD, FM_POS_CMD_ADDR, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+
+#else
+		//删除当前扇区
+		MEM_If_Erase_FS(InFLASH_SAVE_ADDR0);
+		//写入，方向：——>
+		MEM_If_Write_FS((uint8_t *)(w_ParLst), (uint8_t *)InFLASH_SAVE_ADDR0, PAR1_SIZE * sizeof(w_ParLst[0]));				//把数组变量的值保存到FLASH中
+		MEM_If_Write_FS((uint8_t *)(w_ParLst_Drive), (uint8_t *)InFLASH_SAVE_ADDR1, PAR2_SIZE * sizeof(w_ParLst_Drive[0])); //把数组变量的值保存到FLASH中
+
+		//保存位置信息
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_PosPar), (uint8_t *)InFLASH_SAVE_POSTION1, FLASH_POS_SIZE * sizeof(w_ParLst_Drive[0]));
+		//保存位置控制指令
+		//将w_ParLst_Pos_CMD保存到FLASH_SAVE_POS_CMD1中
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_Pos_CMD), (uint8_t *)InFLASH_SAVE_POS_CMD1, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+		MEM_If_DeInit_FS();
+#endif
 		Pw_ModPar = 18;
 		// 再加修改端子配置 ZCL
 		S_SavePar = 1;
 		B_ForceSavPar = 0;
-
-		//写入，方向：<——
-		// STMFLASH_Write(FLASH_SAVE_ADDR0, (uint32_t *)&w_ParLst_Drive, PAR2_SIZE); //把数组变量的值保存到FLASH中
-
-		//保存位置信息
-		// STMFLASH_Write(FLASH_SAVE_POSTION1, (uint32_t *)&w_ParLst_PosPar, FLASH_POS_SIZE);
-
-		//限制命令组号
-		// if (Pos_Group_Select > 5 || Pos_Group_Select < 1)
-		// 	Pos_Group_Select = 1;
-		//保存位置指令
-		//将w_ParLst_Pos_CMD保存到FLASH_SAVE_POS_CMD1中		方向：<——
-		// STMFLASH_Write(FLASH_SAVE_POS_CMD1 + 0X00001000 * (Pos_Group_Select - 1), (uint32_t *)&w_ParLst_Pos_CMD, FLASH_POS_CMD_SIZE);
 	}
 
 	if (Pw_ModPar == 5000 && S_SavePar == 0)
 	{
 		Pw_ModPar = 0; // 防止把 Pw_ModPar==5000 保存到FMRAM
+#if (exFLASH_EXIST == 1)
 		B_SelCS = CS_FMRAM1;
 		// SPI_FMRAM_BufferWrite((uint8_t *)(&w_ParLst[0]), 0, PAR1_SIZE * 2); //PAR1_SIZE=255，255*2个字节，即255个字
-		SPI_FMRAM_BufferWrite((uint8_t *)(&w_ParLst[0]), FM_FLASH_PAR1_ADDR, PAR1_SIZE * sizeof(w_ParLst[0]));
-		SPI_FMRAM_BufferWrite((uint8_t *)w_ParLst_Drive[0], FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0]));
+		SPI_FMRAM_BufferWrite((uint8_t *)(w_ParLst[0]), FM_FLASH_PAR1_ADDR, PAR1_SIZE * sizeof(w_ParLst[0]));
+		SPI_FMRAM_BufferWrite((uint8_t *)w_ParLst_Drive, FM_FLASH_PAR2_ADDR, PAR2_SIZE * sizeof(w_ParLst_Drive[0]));
+		//保存位置信息
+		SPI_FMRAM_BufferWrite((uint8_t *)w_ParLst_PosPar, FM_POS_ADDR, FLASH_POS_SIZE * sizeof(w_ParLst_Drive[0]));
+
+		//保存位置控制命令
+		SPI_FMRAM_BufferWrite((uint8_t *)w_ParLst_Pos_CMD, FM_POS_CMD_ADDR, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+#else
+		//删除当前扇区
+		MEM_If_Erase_FS(InFLASH_SAVE_ADDR0);
+		//写入，方向：——>
+		MEM_If_Write_FS((uint8_t *)w_ParLst, (uint8_t *)InFLASH_SAVE_ADDR0, PAR1_SIZE * sizeof(w_ParLst[0]));			  //把数组变量的值保存到FLASH中
+		MEM_If_Write_FS((uint8_t *)w_ParLst_Drive, (uint8_t *)InFLASH_SAVE_ADDR1, PAR2_SIZE * sizeof(w_ParLst_Drive[0])); //把数组变量的值保存到FLASH中
+
+		//保存位置信息
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_PosPar), (uint8_t *)InFLASH_SAVE_POSTION1, FLASH_POS_SIZE * sizeof(w_ParLst_Drive[0]));
+		//保存位置指令
+		//将w_ParLst_Pos_CMD保存到FLASH_SAVE_POS_CMD1中
+		MEM_If_Write_FS((uint8_t *)(&w_ParLst_Pos_CMD), (uint8_t *)InFLASH_SAVE_POS_CMD1, FLASH_POS_CMD_SIZE * sizeof(w_ParLst_Drive[0]));
+		MEM_If_DeInit_FS();
+#endif
 		Pw_ModPar = 5000;
 		// 再加修改端子配置 ZCL
 		S_SavePar = 1;
-
-		//把RAM中的参数设定值保存到FLASH中
-		// STMFLASH_Write(FLASH_SAVE_ADDR0, (uint32_t *)&w_ParLst_Drive, PAR2_SIZE);
-
-		//保存位置信息到FALSH
-		// STMFLASH_Write(FLASH_SAVE_POSTION1, (uint32_t *)&w_ParLst_PosPar, FLASH_POS_SIZE);
-
-		//限制命令组号
-		// if (Pos_Group_Select > 5 || Pos_Group_Select < 1)
-		// 	Pos_Group_Select = 1;
-		//保存位置指令到FALSH
-		//将w_ParLst_Pos_CMD保存到FLASH_SAVE_POS_CMD1中		方向：<——
-		// STMFLASH_Write(FLASH_SAVE_POS_CMD1 + 0X00001000 * (Pos_Group_Select - 1), (uint32_t *)&w_ParLst_Pos_CMD, FLASH_POS_CMD_SIZE);
 	}
 
 	//
@@ -832,127 +894,201 @@ void KglStatus(void) // 开关量状态
 	}
 }
 
+//开关量输入配置值子函数
+uint8_t DIConfigValue(uint8_t DI_BitNo) // DI_BitNo:DI 位号,将来用数组值代替
+{
+	uint32_t BBDIValue;
+	uint8_t j;
+	BBDIValue = (uint32_t)(DInb[(DI_BitNo - 1) / 8]);
+	j = (DI_BitNo - 1) % 8;
+	if (MEM_ADDR(BITBAND((uint32_t)&BBDIValue, j)))
+		return 1;
+	else
+		return 0;
+}
+
+void DigitalIn(void)
+{
+	// 开关量输入检测； =1,来信号(短接地，光耦输出1进入MCU单片机)；=0,无信号。
+	FilterDI();
+
+	// K_StopRun = DIConfigValue(1); // 启动停止					//注意： 闭合时，运行。断开时，停止运行。
+	// K_StartPoint = DIConfigValue(2);
+	// K_SecondPonit = DIConfigValue(3);
+	K_StopRun = DI1; // 启动停止					//注意： 闭合时，运行。断开时，停止运行。
+	K_StartPoint = DI2;
+	K_SecondPonit = DI3;
+}
+
 void FilterDI(void) // 过滤开关量输入 2016.4.12
 {
-	//DI1
-	if (!B_DI1)
+	u8 i;
+	u8 DI_Save[30] = {0};
+	u8 DI_MASK[9];
+
+	DI_MASK[1] = 0x01;
+	DI_MASK[2] = 0x02;
+	DI_MASK[3] = 0x04;
+	DI_MASK[4] = 0x08;
+	DI_MASK[5] = 0x10;
+	DI_MASK[6] = 0x20;
+	DI_MASK[7] = 0x40;
+	DI_MASK[8] = 0x80;
+
+	for (i = 1; i <= 8; i++)
 	{
-		if (DI1)
+		if (!B_DI_x[i])
 		{
-			if (w_DI1StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			DI_Save[1] = DI1;
+			DI_Save[2] = DI2;
+			DI_Save[3] = DI3;
+			DI_Save[4] = DI4;
+			DI_Save[5] = DI5;
+			DI_Save[6] = DI6;
+			DI_Save[7] = DI7;
+			DI_Save[8] = DI8;
+			if (DI_Save[i])
 			{
-				w_DI1StableCounter = 0;
-				DInb[0] = DInb[0] | 0x01;
-				B_DI1 = 1;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[0] |= DI_MASK[i];
+					B_DI_x[i] = 1;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI1StableCounter > 0)
-			w_DI1StableCounter--;
+		else
+		{
+			if (!DI_Save[i])
+			{
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[0] &= ~DI_MASK[i];
+					B_DI_x[i] = 0;
+				}
+			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
+		}
 	}
 
-	else
+	for (i = 9; i <= 16; i++)
 	{
-		if (!DI1)
+		if (!B_DI_x[i])
 		{
-			if (w_DI1StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			DI_Save[9] = DI9;
+			DI_Save[10] = DI10;
+			DI_Save[11] = DI11;
+			DI_Save[12] = DI12;
+			DI_Save[13] = DI13;
+			DI_Save[14] = DI14;
+			DI_Save[15] = DI15;
+			DI_Save[16] = DI16;
+			if (DI_Save[i])
 			{
-				w_DI1StableCounter = 0;
-				DInb[0] = DInb[0] & 0xFE;
-				B_DI1 = 0;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[1] |= DI_MASK[i - 8];
+					B_DI_x[i] = 1;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI1StableCounter > 0)
-			w_DI1StableCounter--;
-	}
-	//DI2
-	if (!B_DI2)
-	{
-		if (DI2)
+		else
 		{
-			if (w_DI2StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			if (!DI_Save[i])
 			{
-				w_DI2StableCounter = 0;
-				DInb[0] = DInb[0] | 0x02;
-				B_DI2 = 1;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[1] &= ~DI_MASK[i - 8];
+					B_DI_x[i] = 0;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI2StableCounter > 0)
-			w_DI2StableCounter--;
-	}
-
-	else
-	{
-		if (!DI2)
-		{
-			if (w_DI2StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
-			{
-				w_DI2StableCounter = 0;
-				DInb[0] = DInb[0] & 0xFD;
-				B_DI2 = 0;
-			}
-		}
-		else if (w_DI2StableCounter > 0)
-			w_DI2StableCounter--;
-	}
-	//DI3
-	if (!B_DI3)
-	{
-		if (DI3)
-		{
-			if (w_DI3StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
-			{
-				w_DI3StableCounter = 0;
-				DInb[0] = DInb[0] | 0x04;
-				B_DI3 = 1;
-			}
-		}
-		else if (w_DI3StableCounter > 0)
-			w_DI3StableCounter--;
 	}
 
-	else
+	for (i = 17; i <= 24; i++)
 	{
-		if (!DI3)
+		if (!B_DI_x[i])
 		{
-			if (w_DI3StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			DI_Save[17] = DI17;
+			DI_Save[18] = DI18;
+			DI_Save[19] = DI19;
+			DI_Save[20] = DI20;
+			DI_Save[21] = DI21;
+			DI_Save[22] = DI22;
+			DI_Save[23] = DI23;
+			DI_Save[24] = DI24;
+			if (DI_Save[i])
 			{
-				w_DI3StableCounter = 0;
-				DInb[0] = DInb[0] & 0xFB;
-				B_DI3 = 0;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[2] |= DI_MASK[i - 16];
+					B_DI_x[i] = 1;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI3StableCounter > 0)
-			w_DI3StableCounter--;
-	}
-	//DI4
-	if (!B_DI4)
-	{
-		if (DI4)
+		else
 		{
-			if (w_DI4StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			if (!DI_Save[i])
 			{
-				w_DI4StableCounter = 0;
-				DInb[0] = DInb[0] | 0x08;
-				B_DI4 = 1;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[2] &= ~DI_MASK[i - 16];
+					B_DI_x[i] = 0;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI4StableCounter > 0)
-			w_DI4StableCounter--;
 	}
 
-	else
+	for (i = 25; i <= 28; i++)
 	{
-		if (!DI4)
+		if (!B_DI_x[i])
 		{
-			if (w_DI4StableCounter++ > DI_STABLE_NUM) // 用循环次数过滤
+			DI_Save[25] = DI25;
+			DI_Save[26] = DI26;
+			DI_Save[27] = DI27;
+			DI_Save[28] = DI28;
+			if (DI_Save[i])
 			{
-				w_DI4StableCounter = 0;
-				DInb[0] = DInb[0] & 0xF7;
-				B_DI4 = 0;
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[3] |= DI_MASK[i - 24];
+					B_DI_x[i] = 1;
+				}
 			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
 		}
-		else if (w_DI4StableCounter > 0)
-			w_DI4StableCounter--;
+		else
+		{
+			if (!DI_Save[i])
+			{
+				if (w_DIStableCounter_x[i]++ > DI_STABLE_NUM) // 用循环次数过滤
+				{
+					w_DIStableCounter_x[i] = 0;
+					DInb[3] &= ~DI_MASK[i - 24];
+					B_DI_x[i] = 0;
+				}
+			}
+			else if (w_DIStableCounter_x[i] > 0)
+				w_DIStableCounter_x[i]--;
+		}
 	}
 }
 
@@ -1197,27 +1333,6 @@ void Time_Output(void) // 软件时钟输出	 2008.10.21
 			}
 		}
 	}
-}
-
-//开关量输入配置值子函数
-uint8_t DIConfigValue(uint8_t DI_BitNo) // DI_BitNo:DI 位号,将来用数组值代替
-{
-	uint32_t BBDIValue;
-	uint8_t j;
-	BBDIValue = (uint32_t)(DInb[(DI_BitNo - 1) / 8]);
-	j = (DI_BitNo - 1) % 8;
-	if (MEM_ADDR(BITBAND((uint32_t)&BBDIValue, j)))
-		return 1;
-	else
-		return 0;
-}
-
-void DigitalIn(void)
-{
-	// 开关量输入检测； =1,来信号(短接地，光耦输出1进入MCU单片机)；=0,无信号。
-	FilterDI();
-
-	K_StopRun = DIConfigValue(1); // 启动停止					//注意： 闭合时，运行。断开时，停止运行。
 }
 
 //通过开关量输入控制启停

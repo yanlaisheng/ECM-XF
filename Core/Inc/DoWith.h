@@ -49,7 +49,13 @@ void W25qxx_ReadBytes(uint8_t *pBuffer, uint32_t ReadAddr, uint32_t NumByteToRea
 void W25QXX_Write_WithErase(u8 *pBuffer, u32 WriteAddr, u16 NumByteToWrite);
 void read_show_Fram(u16 start_addr, u16 dataLen);
 void read_show_exFLASH(u16 start_addr, u16 dataLen);
-void PosCMD_SaveTo_FLASH(void);
+void PosCMD_SaveTo_exFLASH(void);
+
+void MEM_If_Init_FS(void);
+void MEM_If_DeInit_FS(void);
+uint16_t MEM_If_Erase_FS(uint32_t start_Add);
+uint16_t MEM_If_Write_FS(uint8_t *src, uint8_t *dest, uint32_t Len);
+uint8_t *MEM_If_Read_FS(uint8_t *src, uint8_t *dest, uint32_t Len);
 
 #endif /* __DOWITH_H */
 

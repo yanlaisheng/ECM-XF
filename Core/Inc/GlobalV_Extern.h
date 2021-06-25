@@ -87,8 +87,8 @@ extern s16 Com3_Driver6_Queue_Rear;
 extern s16 Com3_Driver5_Queue_Front;
 extern s16 Com3_Driver6_Queue_Front;
 
-extern s16 Com4_Queue_Rear;  //命令队列中的命令队尾指针
-extern s16 Com4_Queue_Front; //命令队列中的当前要出队的，队头指针
+extern s16 Com4_Queue_Rear; //命令队列中的命令队尾指针
+//extern s16 Com4_Queue_Front; //命令队列中的当前要出队的，队头指针
 
 //************com2**************
 extern uint8_t Txd2Buffer[TXD2_MAX]; // 发送缓冲区
@@ -547,4 +547,10 @@ extern sc32 Pos_Cmd_Group5[];
 extern u8 Flash_Busy_F; //FLASH操作中，忙碌标志
 extern uint8_t Old_K_StopRun;
 
+extern uint8_t K_StopRun;     // 启动停止
+extern uint8_t K_StartPoint;  // 原点开关
+extern uint8_t K_SecondPonit; // 第二点开关
+extern uint8_t Old_K_StopRun;
+extern uint8_t Old_K_StartPonit;
+extern uint8_t Old_K_SecondPonit;
 #endif /* __GLOBALV_EXTERN_H */

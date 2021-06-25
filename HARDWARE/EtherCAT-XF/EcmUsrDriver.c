@@ -280,8 +280,8 @@ int ECM_WaitAsyncDone(int nMS)
  */
 int ECM_EcatInit(uint16_t DCAssignActivate, uint32_t CycTime, int32_t CycShift)
 {
-	int i = 0;
-	uint8_t IdxCheck;
+//	int i = 0;
+//	uint8_t IdxCheck;
 	/*
 	数组指针强制转换成结构体指针
 	这样转换编译器其实什么也不做，只是从语法上来说类型改变而已，用新的类型的方式来解释原来内存中的值

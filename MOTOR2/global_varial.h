@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <stdarg.h>
 //
 
@@ -132,7 +131,7 @@ void Initial_PWM_Motor5(void);
 void Initial_PWM_Motor6(void);
 void EXTI_Configuration(void);
 void CalcMotorPeriStep_CPF(float fstart, float faa, uint16_t step_para, float taa, float tua, float tra, uint16_t MotorTimeTable[], uint16_t MotorStepTable[]);
-void Run_Motor_S(unsigned char MotorID, unsigned char dir, uint32_t Degree, uint32_t StartSpeed, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para);
+void Run_Motor_S(unsigned char MotorID, unsigned char dir, s32 Degree, uint32_t StartSpeed, uint32_t MaxSpeed_S, uint32_t AccSpeed_Para);
 void sort_long(unsigned long long *a, int l);
 void Run_Motors_sync(u8 dir1, u32 Degree1, u16 StartSpeed1, u16 SetSpeed1, u16 AccSpeed1, u8 dir2, u32 Degree2, u16 StartSpeed2, u16 SetSpeed2, u16 AccSpeed2,
 					 u8 dir3, u32 Degree3, u16 StartSpeed3, u16 SetSpeed3, u16 AccSpeed3, u8 dir4, u32 Degree4, u16 StartSpeed4, u16 SetSpeed4, u16 AccSpeed4,
